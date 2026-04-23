@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "levelId": 2,
+  "name": "Level 2",
+  "description": "Introduces fast ships. Some captured map bases launch faster-moving fleets.",
+  "sortOrder": 2,
+  "unlockAfterLevelId": 1,
+  "worldWidth": 1000,
+  "worldHeight": 1600,
+  "introMessage": "Fast lanes open up once you capture relay points",
+  "aiControllers": [
+    { "owner": "AI_1", "type": "STANDARD" }
+  ],
+  "bases": [
+    { "id": 1, "x": 180, "y": 1350, "owner": "PLAYER", "type": "COMMAND", "units": 32, "cap": 40, "capLevel": 4, "radius": 54 },
+    { "id": 2, "x": 820, "y": 250, "owner": "AI_1", "type": "COMMAND", "units": 32, "cap": 40, "capLevel": 4, "radius": 54 },
+    { "id": 3, "x": 300, "y": 1120, "owner": "NEUTRAL", "type": "COMMAND", "units": 16, "cap": 20, "capLevel": 2, "radius": 54 },
+    { "id": 4, "x": 735, "y": 1180, "owner": "NEUTRAL", "type": "FAST", "units": 19, "cap": 20, "capLevel": 2, "radius": 54 },
+    { "id": 5, "x": 530, "y": 790, "owner": "NEUTRAL", "type": "COMMAND", "units": 22, "cap": 30, "capLevel": 3, "radius": 54 },
+    { "id": 6, "x": 260, "y": 520, "owner": "NEUTRAL", "type": "FAST", "units": 18, "cap": 20, "capLevel": 2, "radius": 54 },
+    { "id": 7, "x": 780, "y": 630, "owner": "NEUTRAL", "type": "COMMAND", "units": 18, "cap": 20, "capLevel": 2, "radius": 54 },
+    { "id": 8, "x": 455, "y": 1320, "owner": "NEUTRAL", "type": "COMMAND", "units": 19, "cap": 20, "capLevel": 2, "radius": 54 }
+  ],
+  "obstacles": [
+    { "x": 520, "y": 480, "radius": 88 },
+    { "x": 330, "y": 860, "radius": 64 },
+    { "x": 705, "y": 980, "radius": 86 },
+    { "x": 520, "y": 1240, "radius": 58 }
+  ]
+}

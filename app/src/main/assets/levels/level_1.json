@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "levelId": 1,
+  "name": "Level 1",
+  "description": "Regular ships only. No special abilities. Capture the map and defeat the enemy network.",
+  "sortOrder": 1,
+  "unlockAfterLevelId": null,
+  "worldWidth": 1000,
+  "worldHeight": 1600,
+  "introMessage": "Capture nearby structures and push forward",
+  "aiControllers": [
+    {
+      "owner": "AI_1",
+      "type": "STANDARD"
+    }
+  ],
+  "bases": [
+    {
+      "id": 1,
+      "x": 175,
+      "y": 1357,
+      "owner": "PLAYER",
+      "type": "COMMAND",
+      "units": 50,
+      "cap": 50,
+      "capLevel": 5,
+      "radius": 54
+    },
+    {
+      "id": 2,
+      "x": 820,
+      "y": 250,
+      "owner": "AI_1",
+      "type": "COMMAND",
+      "units": 25,
+      "cap": 30,
+      "capLevel": 3,
+      "radius": 54
+    },
+    {
+      "id": 3,
+      "x": 213,
+      "y": 1078,
+      "owner": "NEUTRAL",
+      "type": "COMMAND",
+      "units": 30,
+      "cap": 30,
+      "capLevel": 3,
+      "radius": 54
+    },
+    {
+      "id": 4,
+      "x": 775,
+      "y": 1193,
+      "owner": "NEUTRAL",
+      "type": "COMMAND",
+      "units": 20,
+      "cap": 20,
+      "capLevel": 2,
+      "radius": 54
+    },
+    {
+      "id": 5,
+      "x": 545,
+      "y": 790,
+      "owner": "NEUTRAL",
+      "type": "COMMAND",
+      "units": 30,
+      "cap": 30,
+      "capLevel": 3,
+      "radius": 54
+    },
+    {
+      "id": 6,
+      "x": 250,
+      "y": 480,
+      "owner": "NEUTRAL",
+      "type": "COMMAND",
+      "units": 10,
+      "cap": 10,
+      "capLevel": 1,
+      "radius": 54
+    },
+    {
+      "id": 7,
+      "x": 790,
+      "y": 650,
+      "owner": "NEUTRAL",
+      "type": "COMMAND",
+      "units": 10,
+      "cap": 10,
+      "capLevel": 1,
+      "radius": 54
+    },
+    {
+      "id": 8,
+      "x": 465,
+      "y": 1240,
+      "owner": "NEUTRAL",
+      "type": "COMMAND",
+      "units": 30,
+      "cap": 20,
+      "capLevel": 2,
+      "radius": 54
+    }
+  ],
+  "obstacles": [
+    {
+      "x": 500,
+      "y": 520,
+      "radius": 95
+    },
+    {
+      "x": 342,
+      "y": 928,
+      "radius": 70
+    },
+    {
+      "x": 745,
+      "y": 960,
+      "radius": 78
+    }
+  ]
+}
