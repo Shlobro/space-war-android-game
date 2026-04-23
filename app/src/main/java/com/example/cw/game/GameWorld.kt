@@ -8,8 +8,6 @@ import com.example.cw.game.levels.WorldBounds
 import kotlin.math.max
 import kotlin.math.min
 
-internal const val CAPACITY_PER_LEVEL = 10
-
 internal fun createMatch(level: LevelDefinition): MatchState {
     return MatchState(
         worldBounds = level.worldBounds,
@@ -20,9 +18,8 @@ internal fun createMatch(level: LevelDefinition): MatchState {
                 owner = it.owner,
                 type = it.type,
                 units = it.units,
-                cap = it.cap,
                 capLevel = it.capLevel,
-                radius = it.radius
+                maxLevel = it.maxLevel
             )
         },
         fleets = emptyList(),
@@ -44,8 +41,6 @@ internal fun createMatch(level: LevelDefinition): MatchState {
         isPaused = false
     )
 }
-
-internal fun capacityForLevel(capLevel: Int): Int = capLevel * CAPACITY_PER_LEVEL
 
 internal fun upgradeCost(base: BaseState): Float = 18f + base.capLevel * 10f
 

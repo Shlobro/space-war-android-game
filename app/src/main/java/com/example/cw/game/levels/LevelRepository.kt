@@ -20,7 +20,7 @@ internal class AssetLevelRepository(
 
     override fun loadLevel(levelId: Int): LevelDefinition {
         return levelFileNames().asSequence()
-            .map(::loadLevelFile)
+            .mapNotNull { runCatching { loadLevelFile(it) }.getOrNull() }
             .firstOrNull { it.levelId == levelId }
             ?: throw LevelParseException("Level $levelId was not found in assets/$levelsDirectory")
     }

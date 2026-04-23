@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "levelId": 1,
   "name": "Level 1",
   "description": "Regular ships only. No special abilities. Capture the map and defeat the enemy network.",
@@ -22,9 +22,8 @@
       "owner": "PLAYER",
       "type": "COMMAND",
       "units": 50,
-      "cap": 50,
       "capLevel": 5,
-      "radius": 54
+      "maxLevel": 10
     },
     {
       "id": 2,
@@ -33,9 +32,8 @@
       "owner": "AI_1",
       "type": "COMMAND",
       "units": 25,
-      "cap": 30,
       "capLevel": 3,
-      "radius": 54
+      "maxLevel": 10
     },
     {
       "id": 3,
@@ -44,9 +42,8 @@
       "owner": "NEUTRAL",
       "type": "COMMAND",
       "units": 30,
-      "cap": 30,
       "capLevel": 3,
-      "radius": 54
+      "maxLevel": 10
     },
     {
       "id": 4,
@@ -55,9 +52,8 @@
       "owner": "NEUTRAL",
       "type": "COMMAND",
       "units": 20,
-      "cap": 20,
       "capLevel": 2,
-      "radius": 54
+      "maxLevel": 10
     },
     {
       "id": 5,
@@ -66,9 +62,8 @@
       "owner": "NEUTRAL",
       "type": "COMMAND",
       "units": 30,
-      "cap": 30,
       "capLevel": 3,
-      "radius": 54
+      "maxLevel": 10
     },
     {
       "id": 6,
@@ -77,9 +72,8 @@
       "owner": "NEUTRAL",
       "type": "COMMAND",
       "units": 10,
-      "cap": 10,
       "capLevel": 1,
-      "radius": 54
+      "maxLevel": 10
     },
     {
       "id": 7,
@@ -88,9 +82,8 @@
       "owner": "NEUTRAL",
       "type": "COMMAND",
       "units": 10,
-      "cap": 10,
       "capLevel": 1,
-      "radius": 54
+      "maxLevel": 10
     },
     {
       "id": 8,
@@ -99,9 +92,8 @@
       "owner": "NEUTRAL",
       "type": "COMMAND",
       "units": 30,
-      "cap": 20,
       "capLevel": 2,
-      "radius": 54
+      "maxLevel": 10
     }
   ],
   "obstacles": [

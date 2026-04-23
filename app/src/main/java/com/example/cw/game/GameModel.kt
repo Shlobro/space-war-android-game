@@ -2,6 +2,9 @@ package com.example.cw.game
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.example.cw.game.levels.BASE_RADIUS_MIN
+import com.example.cw.game.levels.DEFAULT_MAX_LEVEL
+import com.example.cw.game.levels.RADIUS_PER_LEVEL
 import com.example.cw.game.levels.WorldBounds
 
 internal data class MatchState(
@@ -46,12 +49,12 @@ internal data class BaseState(
     val owner: Owner,
     val type: BaseType,
     val units: Float,
-    val cap: Int,
     val capLevel: Int,
-    val radius: Float = 54f
+    val maxLevel: Int = DEFAULT_MAX_LEVEL
 ) {
-    val productionRate: Float
-        get() = 0.9f
+    val cap: Int get() = capLevel * 10
+    val radius: Float get() = BASE_RADIUS_MIN + (capLevel - 1) * RADIUS_PER_LEVEL
+    val productionRate: Float get() = 0.9f
 }
 
 internal data class FleetState(

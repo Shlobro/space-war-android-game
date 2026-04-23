@@ -36,16 +36,16 @@ class LevelRepositoryTest {
     }
 
     @Test
-    fun decode_rejectsCapThatDoesNotMatchCapLevel() {
+    fun decode_rejectsCapLevelExceedingMaxLevel() {
         val json = validJson(levelId = 1, sortOrder = 1).replace(
-            "\"cap\": 20, \"capLevel\": 2",
-            "\"cap\": 20, \"capLevel\": 1"
+            "\"capLevel\": 2, \"maxLevel\": 10",
+            "\"capLevel\": 5, \"maxLevel\": 2"
         )
 
         val error = runCatching { LevelJson.decode(json) }.exceptionOrNull()
 
         assertTrue(error is LevelParseException)
-        assertTrue(error?.message?.contains("cap must equal capLevel * 10") == true)
+        assertTrue(error?.message?.contains("capLevel cannot exceed maxLevel") == true)
     }
 
     @Test
@@ -96,8 +96,8 @@ class LevelRepositoryTest {
             introMessage = "Testing",
             aiControllers = listOf(LevelAiDefinition(Owner.AI_1, AiType.STANDARD)),
             bases = listOf(
-                LevelBaseDefinition(1, 100f, 150f, Owner.PLAYER, BaseType.FAST, 25f, 60, 6, 70f),
-                LevelBaseDefinition(2, 900f, 200f, Owner.AI_1, BaseType.COMMAND, 30f, 50, 5, 54f)
+                LevelBaseDefinition(1, 100f, 150f, Owner.PLAYER, BaseType.FAST, 25f, 6),
+                LevelBaseDefinition(2, 900f, 200f, Owner.AI_1, BaseType.COMMAND, 30f, 5)
             ),
             obstacles = listOf(LevelObstacleDefinition(500f, 600f, 90f))
         )
@@ -109,7 +109,7 @@ class LevelRepositoryTest {
         assertEquals(1200f, match.worldBounds.width)
         assertEquals(1800f, match.worldBounds.height)
         assertEquals("Testing", match.message)
-        assertEquals(70f, match.bases.first().radius)
+        assertEquals(BASE_RADIUS_MIN + (6 - 1) * RADIUS_PER_LEVEL, match.bases.first().radius)
         assertEquals(BaseType.FAST, match.bases.first().type)
         assertEquals(90f, match.obstacles.single().radius)
     }
@@ -117,7 +117,7 @@ class LevelRepositoryTest {
     private fun validJson(levelId: Int, sortOrder: Int): String {
         return """
             {
-              "schemaVersion": 1,
+              "schemaVersion": 2,
               "levelId": $levelId,
               "name": "Level $levelId",
               "description": "Description $levelId",
@@ -130,9 +130,9 @@ class LevelRepositoryTest {
                 { "owner": "AI_1", "type": "STANDARD" }
               ],
               "bases": [
-                { "id": 1, "x": 100, "y": 1500, "owner": "PLAYER", "type": "COMMAND", "units": 20, "cap": 20, "capLevel": 2, "radius": 54 },
-                { "id": 2, "x": 900, "y": 100, "owner": "AI_1", "type": "COMMAND", "units": 20, "cap": 20, "capLevel": 2, "radius": 54 },
-                { "id": 3, "x": 500, "y": 800, "owner": "NEUTRAL", "type": "COMMAND", "units": 10, "cap": 10, "capLevel": 1, "radius": 54 }
+                { "id": 1, "x": 100, "y": 1500, "owner": "PLAYER", "type": "COMMAND", "units": 20, "capLevel": 2, "maxLevel": 10 },
+                { "id": 2, "x": 900, "y": 100, "owner": "AI_1", "type": "COMMAND", "units": 20, "capLevel": 2, "maxLevel": 10 },
+                { "id": 3, "x": 500, "y": 800, "owner": "NEUTRAL", "type": "COMMAND", "units": 10, "capLevel": 1, "maxLevel": 10 }
               ],
               "obstacles": [
                 { "x": 450, "y": 700, "radius": 60 }

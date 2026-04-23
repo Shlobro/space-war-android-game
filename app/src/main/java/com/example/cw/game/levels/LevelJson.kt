@@ -48,9 +48,8 @@ internal object LevelJson {
                     type = enumValueOfOrNull<BaseType>(typeName)
                         ?: throw LevelParseException("Unknown base type '$typeName' in bases[$index]"),
                     units = base.float("units"),
-                    cap = base.int("cap"),
                     capLevel = base.int("capLevel"),
-                    radius = base.optionalFloat("radius") ?: DEFAULT_BASE_RADIUS
+                    maxLevel = base.optionalInt("maxLevel") ?: DEFAULT_MAX_LEVEL
                 )
             },
             obstacles = root.array("obstacles").mapIndexed { index, value ->
@@ -68,7 +67,7 @@ internal object LevelJson {
     }
 
     private fun validateLevel(level: LevelDefinition) {
-        if (level.schemaVersion != LEVEL_SCHEMA_VERSION) {
+        if (level.schemaVersion != LEVEL_SCHEMA_VERSION && level.schemaVersion != 1) {
             throw LevelParseException(
                 "Unsupported schemaVersion ${level.schemaVersion}; expected $LEVEL_SCHEMA_VERSION"
             )
@@ -105,22 +104,17 @@ internal object LevelJson {
             if (base.x !in 0f..level.worldBounds.width || base.y !in 0f..level.worldBounds.height) {
                 throw LevelParseException("Base ${base.id} is outside world bounds")
             }
-            if (base.radius <= 0f) {
-                throw LevelParseException("Base ${base.id} radius must be positive")
-            }
             if (base.units < 0f) {
                 throw LevelParseException("Base ${base.id} units must be non-negative")
-            }
-            if (base.cap < 1) {
-                throw LevelParseException("Base ${base.id} cap must be at least 1")
             }
             if (base.capLevel < 1) {
                 throw LevelParseException("Base ${base.id} capLevel must be at least 1")
             }
-            if (base.cap != com.example.cw.game.capacityForLevel(base.capLevel)) {
-                throw LevelParseException(
-                    "Base ${base.id} cap must equal capLevel * 10"
-                )
+            if (base.maxLevel < 1) {
+                throw LevelParseException("Base ${base.id} maxLevel must be at least 1")
+            }
+            if (base.capLevel > base.maxLevel) {
+                throw LevelParseException("Base ${base.id} capLevel cannot exceed maxLevel")
             }
             if (base.owner.isAi && base.owner !in configuredAiOwners) {
                 throw LevelParseException("Base ${base.id} uses ${base.owner.name} without an AI controller entry")

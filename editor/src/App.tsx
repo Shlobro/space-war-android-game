@@ -5,14 +5,14 @@ import {
   AI_OWNERS,
   AI_TYPES,
   BASE_TYPES,
-  capacityForLevel,
-  capLevelForCapacity,
-  DEFAULT_BASE_RADIUS,
+  DEFAULT_CAP_LEVEL,
+  DEFAULT_MAX_LEVEL,
   LevelAiController,
   LevelBase,
   LevelDocument,
   LevelObstacle,
   OWNERS,
+  radiusForLevel,
   Selection,
   createEmptyLevel
 } from "./level-types";
@@ -233,9 +233,8 @@ export default function App() {
         owner: placementOwner,
         type: placementBaseType,
         units: 10,
-        cap: capacityForLevel(1),
-        capLevel: 1,
-        radius: DEFAULT_BASE_RADIUS
+        capLevel: DEFAULT_CAP_LEVEL,
+        maxLevel: DEFAULT_MAX_LEVEL
       };
       setLevel((current) => ({ ...current, bases: [...current.bases, base] }));
       setSelection({ kind: "base", id: base.id });
@@ -349,7 +348,7 @@ export default function App() {
                         x={toScreen(base.x, scale)}
                         y={toScreen(base.y, scale)}
                         sides={4}
-                        radius={base.radius * scale}
+                        radius={radiusForLevel(base.capLevel) * scale}
                         rotation={45}
                         fill={ownerFill(base.owner)}
                         stroke={selection?.kind === "base" && selection.id === base.id ? "#f0c96d" : "#d7e6f2"}
@@ -374,7 +373,7 @@ export default function App() {
                         key={base.id}
                         x={toScreen(base.x, scale)}
                         y={toScreen(base.y, scale)}
-                        radius={base.radius * scale}
+                        radius={radiusForLevel(base.capLevel) * scale}
                         fill={ownerFill(base.owner)}
                         stroke={selection?.kind === "base" && selection.id === base.id ? "#f0c96d" : "#d7e6f2"}
                         strokeWidth={selection?.kind === "base" && selection.id === base.id ? 4 : 2}
@@ -456,36 +455,25 @@ export default function App() {
                 <input type="number" value={selectedBase.units} onChange={(event) => updateBase(selectedBase.id, { units: Number(event.target.value) })} />
               </label>
               <label>
-                Cap
-                <input
-                  type="number"
-                  value={selectedBase.cap}
-                  onChange={(event) => {
-                    const nextCapLevel = capLevelForCapacity(Number(event.target.value));
-                    updateBase(selectedBase.id, {
-                      cap: capacityForLevel(nextCapLevel),
-                      capLevel: nextCapLevel
-                    });
-                  }}
-                />
-              </label>
-              <label>
                 Cap Level
                 <input
                   type="number"
+                  min={1}
                   value={selectedBase.capLevel}
                   onChange={(event) => {
                     const nextCapLevel = Math.max(1, Math.round(Number(event.target.value) || 1));
-                    updateBase(selectedBase.id, {
-                      capLevel: nextCapLevel,
-                      cap: capacityForLevel(nextCapLevel)
-                    });
+                    updateBase(selectedBase.id, { capLevel: nextCapLevel });
                   }}
                 />
               </label>
               <label>
-                Radius
-                <input type="number" value={selectedBase.radius} onChange={(event) => updateBase(selectedBase.id, { radius: Number(event.target.value) })} />
+                Max Level
+                <input
+                  type="number"
+                  min={1}
+                  value={selectedBase.maxLevel}
+                  onChange={(event) => updateBase(selectedBase.id, { maxLevel: Math.max(1, Math.round(Number(event.target.value) || 1)) })}
+                />
               </label>
               <label>
                 X

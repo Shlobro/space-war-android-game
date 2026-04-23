@@ -31,7 +31,6 @@ class GameLogicTest {
             owner = Owner.PLAYER,
             type = BaseType.COMMAND,
             units = 10f,
-            cap = 10,
             capLevel = 1
         )
         val state = MatchState(
@@ -82,7 +81,6 @@ class GameLogicTest {
             owner = Owner.PLAYER,
             type = BaseType.COMMAND,
             units = 5f,
-            cap = 20,
             capLevel = 2
         )
         val enemyBase = BaseState(
@@ -91,7 +89,6 @@ class GameLogicTest {
             owner = Owner.AI_1,
             type = BaseType.ASSAULT,
             units = 20f,
-            cap = 20,
             capLevel = 2
         )
         val arrivingEnemyFleet = FleetState(
@@ -138,7 +135,6 @@ class GameLogicTest {
             owner = Owner.AI_1,
             type = BaseType.COMMAND,
             units = 20f,
-            cap = 20,
             capLevel = 2
         )
         val targetBase = BaseState(
@@ -147,7 +143,6 @@ class GameLogicTest {
             owner = Owner.NEUTRAL,
             type = BaseType.COMMAND,
             units = 4f,
-            cap = 20,
             capLevel = 2
         )
         val state = MatchState(
@@ -159,7 +154,6 @@ class GameLogicTest {
                     owner = Owner.PLAYER,
                     type = BaseType.COMMAND,
                     units = 10f,
-                    cap = 20,
                     capLevel = 2
                 ),
                 enemyBase,
@@ -207,9 +201,9 @@ class GameLogicTest {
             introMessage = "Start",
             aiControllers = listOf(LevelAiDefinition(Owner.AI_1, AiType.STANDARD)),
             bases = listOf(
-                LevelBaseDefinition(1, 180f, 1350f, Owner.PLAYER, BaseType.COMMAND, 32f, 40, 4),
-                LevelBaseDefinition(2, 820f, 250f, Owner.AI_1, BaseType.COMMAND, 32f, 40, 4),
-                LevelBaseDefinition(3, 260f, 1100f, Owner.NEUTRAL, BaseType.COMMAND, 16f, 20, 2)
+                LevelBaseDefinition(1, 180f, 1350f, Owner.PLAYER, BaseType.COMMAND, 32f, 4),
+                LevelBaseDefinition(2, 820f, 250f, Owner.AI_1, BaseType.COMMAND, 32f, 4),
+                LevelBaseDefinition(3, 260f, 1100f, Owner.NEUTRAL, BaseType.COMMAND, 16f, 2)
             ),
             obstacles = listOf(LevelObstacleDefinition(500f, 520f, 95f))
         )

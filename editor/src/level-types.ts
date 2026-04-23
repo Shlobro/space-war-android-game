@@ -1,7 +1,10 @@
 export const WORLD_WIDTH = 1000;
 export const WORLD_HEIGHT = 1600;
-export const DEFAULT_BASE_RADIUS = 54;
 export const CAPACITY_PER_LEVEL = 10;
+export const BASE_RADIUS_MIN = 36;
+export const RADIUS_PER_LEVEL = 6;
+export const DEFAULT_CAP_LEVEL = 4;
+export const DEFAULT_MAX_LEVEL = 10;
 
 export type Owner = "PLAYER" | "AI_1" | "AI_2" | "AI_3" | "AI_4" | "NEUTRAL";
 export type BaseType =
@@ -25,9 +28,8 @@ export type LevelBase = {
   owner: Owner;
   type: BaseType;
   units: number;
-  cap: number;
   capLevel: number;
-  radius: number;
+  maxLevel: number;
 };
 
 export type LevelObstacle = {
@@ -72,17 +74,21 @@ export function capacityForLevel(capLevel: number): number {
   return sanitizeCapLevel(capLevel) * CAPACITY_PER_LEVEL;
 }
 
-export function capLevelForCapacity(cap: number): number {
-  return sanitizeCapLevel(Math.round(cap / CAPACITY_PER_LEVEL));
+export function radiusForLevel(capLevel: number): number {
+  return BASE_RADIUS_MIN + (sanitizeCapLevel(capLevel) - 1) * RADIUS_PER_LEVEL;
 }
 
 export function sanitizeCapLevel(capLevel: number): number {
   return Math.max(1, Math.round(capLevel));
 }
 
+export function sanitizeMaxLevel(maxLevel: number): number {
+  return Math.max(1, Math.round(maxLevel));
+}
+
 export function createEmptyLevel(nextLevelId: number): LevelDocument {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     levelId: nextLevelId,
     name: `Level ${nextLevelId}`,
     description: "Describe the level objective here.",
@@ -100,9 +106,8 @@ export function createEmptyLevel(nextLevelId: number): LevelDocument {
         owner: "PLAYER",
         type: "COMMAND",
         units: 32,
-        cap: capacityForLevel(4),
-        capLevel: 4,
-        radius: DEFAULT_BASE_RADIUS
+        capLevel: DEFAULT_CAP_LEVEL,
+        maxLevel: DEFAULT_MAX_LEVEL
       },
       {
         id: 2,
@@ -111,9 +116,8 @@ export function createEmptyLevel(nextLevelId: number): LevelDocument {
         owner: "AI_1",
         type: "COMMAND",
         units: 32,
-        cap: capacityForLevel(4),
-        capLevel: 4,
-        radius: DEFAULT_BASE_RADIUS
+        capLevel: DEFAULT_CAP_LEVEL,
+        maxLevel: DEFAULT_MAX_LEVEL
       }
     ],
     obstacles: []

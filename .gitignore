@@ -21,3 +21,6 @@ editor/.DS_Store
 app/local.properties
 app/build/
 build/
+
+.claude/
+things.txt

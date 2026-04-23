@@ -140,6 +140,13 @@ private fun upgradeBaseForOwner(
     showMessage: Boolean
 ): MatchState {
     val base = state.bases.firstOrNull { it.id == baseId && it.owner == owner } ?: return state
+    if (base.capLevel >= base.maxLevel) {
+        return if (showMessage && owner == Owner.PLAYER) {
+            state.copy(message = "Base is at max level")
+        } else {
+            state
+        }
+    }
     val cost = upgradeCost(base)
     val availableMoney = when (owner) {
         Owner.PLAYER -> state.playerMoney
@@ -156,8 +163,7 @@ private fun upgradeBaseForOwner(
 
     val updatedBases = state.bases.map {
         if (it.id == baseId) {
-            val nextCapLevel = it.capLevel + 1
-            it.copy(cap = capacityForLevel(nextCapLevel), capLevel = nextCapLevel)
+            it.copy(capLevel = it.capLevel + 1)
         } else {
             it
         }
