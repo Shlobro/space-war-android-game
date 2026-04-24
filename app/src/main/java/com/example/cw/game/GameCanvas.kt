@@ -16,6 +16,9 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.sp
 
+private const val LEVEL_BADGE_EDGE_OVERLAP_RATIO = 0.15f
+private const val LEVEL_BADGE_VIEWPORT_MARGIN_PX = 2f
+
 @Composable
 internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
     val density = LocalDensity.current
@@ -135,6 +138,11 @@ private fun DrawScope.drawBase(
     val center = worldToScreen(base.position, size, state.worldBounds)
     val baseRadius = base.radius * scale(size, state.worldBounds)
     val labelLayout = baseLabelLayout(baseRadius)
+    val levelBadgeCenterY = resolveLevelBadgeCenterY(
+        baseCenterY = center.y,
+        canvasHeight = size.height,
+        labelLayout = labelLayout
+    )
     val fillColor = base.owner.color
 
     if (base.type == BaseType.FAST) {
@@ -183,10 +191,21 @@ private fun DrawScope.drawBase(
         center.y + labelLayout.unitsOffsetY,
         labelPaint
     )
+    drawCircle(
+        color = Color(0xFF0E1722),
+        radius = labelLayout.levelBadgeRadius,
+        center = Offset(center.x, levelBadgeCenterY)
+    )
+    drawCircle(
+        color = if (selected) Color(0xFFF6CB7D) else Color.White.copy(alpha = 0.92f),
+        radius = labelLayout.levelBadgeRadius,
+        center = Offset(center.x, levelBadgeCenterY),
+        style = Stroke(width = 2f)
+    )
     drawContext.canvas.nativeCanvas.drawText(
         base.capLevel.toString(),
         center.x,
-        center.y + labelLayout.levelOffsetY,
+        levelBadgeCenterY + (levelPaint.textSize * 0.33f),
         levelPaint
     )
     if (selected) {
@@ -244,18 +263,31 @@ private fun DrawScope.drawFleet(fleet: FleetState, fleetPaint: Paint, state: Mat
 
 internal data class BaseLabelLayout(
     val unitsOffsetY: Float,
-    val levelOffsetY: Float,
+    val levelBadgeCenterY: Float,
+    val levelBadgeRadius: Float,
     val selectedOffsetY: Float
 )
 
 internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
     val unitsOffsetY = (baseRadius * 0.08f).coerceIn(2f, 5f)
-    val minLevelOffsetY = baseRadius * 0.45f
-    val maxLevelOffsetY = (baseRadius - 4f).coerceAtLeast(minLevelOffsetY)
-    val levelOffsetY = (baseRadius * 0.58f).coerceIn(minLevelOffsetY, maxLevelOffsetY)
+    val levelBadgeRadius = (baseRadius * 0.28f).coerceIn(7f, 12f)
+    val levelBadgeCenterY = baseRadius - (levelBadgeRadius * LEVEL_BADGE_EDGE_OVERLAP_RATIO)
     return BaseLabelLayout(
         unitsOffsetY = unitsOffsetY,
-        levelOffsetY = levelOffsetY,
+        levelBadgeCenterY = levelBadgeCenterY,
+        levelBadgeRadius = levelBadgeRadius,
         selectedOffsetY = -baseRadius - 16f
     )
+}
+
+internal fun resolveLevelBadgeCenterY(
+    baseCenterY: Float,
+    canvasHeight: Float,
+    labelLayout: BaseLabelLayout
+): Float {
+    val preferredCenterY = baseCenterY + labelLayout.levelBadgeCenterY
+    val minCenterY = labelLayout.levelBadgeRadius + LEVEL_BADGE_VIEWPORT_MARGIN_PX
+    val maxCenterY = (canvasHeight - labelLayout.levelBadgeRadius - LEVEL_BADGE_VIEWPORT_MARGIN_PX)
+        .coerceAtLeast(minCenterY)
+    return preferredCenterY.coerceIn(minCenterY, maxCenterY)
 }

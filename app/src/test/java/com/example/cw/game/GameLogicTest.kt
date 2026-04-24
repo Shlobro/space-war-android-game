@@ -16,6 +16,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GameLogicTest {
+    companion object {
+        private const val REPRESENTATIVE_SMALL_RENDERED_RADIUS = 12.96f
+    }
+
     private val viewportSize = IntSize(1000, 1000)
     private val testWorldBounds = WorldBounds(width = 1000f, height = 1600f)
     private val upgradeNodeFallbackButtonSize = IntSize(
@@ -962,23 +966,65 @@ class GameLogicTest {
     }
 
     @Test
-    fun baseLabelLayout_placesLevelLabelBelowUnitCount() {
+    fun baseLabelLayout_placesLevelBadgeAcrossBottomEdgeOfBase() {
         val baseRadius = 36f
         val layout = baseLabelLayout(baseRadius)
 
-        assertTrue(layout.levelOffsetY > layout.unitsOffsetY)
-        assertTrue(layout.levelOffsetY <= baseRadius - 4f)
+        assertTrue(layout.levelBadgeCenterY > layout.unitsOffsetY)
+        assertTrue(layout.levelBadgeCenterY < baseRadius + layout.levelBadgeRadius)
+        assertTrue(layout.levelBadgeCenterY + layout.levelBadgeRadius > baseRadius)
         assertEquals(-(baseRadius + 16f), layout.selectedOffsetY, 0.001f)
     }
 
     @Test
-    fun baseLabelLayout_keepsLevelLabelInsideSmallRenderedBase() {
-        val smallRenderedRadius = 12.96f
+    fun baseLabelLayout_keepsBottomBadgeReadableForSmallRenderedBase() {
+        val smallRenderedRadius = REPRESENTATIVE_SMALL_RENDERED_RADIUS
 
         val layout = baseLabelLayout(smallRenderedRadius)
 
-        assertTrue(layout.levelOffsetY > layout.unitsOffsetY)
-        assertTrue(layout.levelOffsetY < smallRenderedRadius)
+        assertTrue(layout.levelBadgeCenterY > layout.unitsOffsetY)
+        assertTrue(layout.levelBadgeRadius >= 7f)
+        assertTrue(layout.levelBadgeCenterY + layout.levelBadgeRadius > smallRenderedRadius)
+        assertTrue(layout.levelBadgeCenterY < smallRenderedRadius + layout.levelBadgeRadius)
+    }
+
+    @Test
+    fun resolveLevelBadgeCenterY_keepsPreferredPositionWhenBadgeFitsOnScreen() {
+        val layout = baseLabelLayout(baseRadius = 36f)
+
+        val centerY = resolveLevelBadgeCenterY(
+            baseCenterY = 300f,
+            canvasHeight = 1000f,
+            labelLayout = layout
+        )
+
+        assertEquals(300f + layout.levelBadgeCenterY, centerY, 0.001f)
+    }
+
+    @Test
+    fun resolveLevelBadgeCenterY_clampsBadgeInsideBottomCanvasEdge() {
+        val layout = baseLabelLayout(baseRadius = 36f)
+
+        val centerY = resolveLevelBadgeCenterY(
+            baseCenterY = 996f,
+            canvasHeight = 1000f,
+            labelLayout = layout
+        )
+
+        assertEquals(1000f - layout.levelBadgeRadius - 2f, centerY, 0.001f)
+    }
+
+    @Test
+    fun resolveLevelBadgeCenterY_keepsBadgeVisibleInTinyViewport() {
+        val layout = baseLabelLayout(baseRadius = REPRESENTATIVE_SMALL_RENDERED_RADIUS)
+
+        val centerY = resolveLevelBadgeCenterY(
+            baseCenterY = 40f,
+            canvasHeight = 10f,
+            labelLayout = layout
+        )
+
+        assertTrue(centerY >= layout.levelBadgeRadius + 2f)
     }
 
     @Test
