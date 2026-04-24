@@ -41,6 +41,12 @@ internal val AccentRed = Color(0xFFFF7868)
 internal val TextPrimary = Color(0xFFEAF4FF)
 internal val TextSecond = Color(0xFF7A9EBB)
 internal val TextDim = Color(0xFF3D6278)
+internal val HudFundsChipBackground = Color(0xCC2D2110)
+internal val HudFundsBadgeBackground = Color(0xFFFFDA62)
+internal val HudFundsBadgeBorder = Color(0x66FFF0B0)
+internal val HudFundsBadgeText = Color(0xFF4B3300)
+internal val HudFundsLabelText = Color(0xFFE8C45A)
+internal val HudFundsValueText = Color(0xFFFFE28A)
 
 internal val SpaceBg = Brush.verticalGradient(listOf(BgDeep, BgMid, Color(0xFF0A2331)))
 

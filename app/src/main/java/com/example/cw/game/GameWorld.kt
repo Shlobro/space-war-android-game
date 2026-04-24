@@ -45,7 +45,7 @@ internal fun createMatch(level: LevelDefinition): MatchState {
     )
 }
 
-internal fun upgradeCost(base: BaseState): Float = 18f + base.capLevel * 10f
+internal fun upgradeCost(base: BaseState): Float = 10f * (base.capLevel + 1)
 
 internal fun formatFunds(amount: Float): String = amount.toInt().toString()
 

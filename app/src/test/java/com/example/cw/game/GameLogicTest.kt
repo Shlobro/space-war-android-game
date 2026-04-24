@@ -49,10 +49,81 @@ class GameLogicTest {
 
         val updated = upgradeBase(state, baseId = 1)
 
-        assertEquals(12f, updated.playerMoney)
+        assertEquals(20f, updated.playerMoney)
         assertEquals(20, updated.bases.single().cap)
         assertEquals(2, updated.bases.single().capLevel)
         assertEquals("Base upgraded", updated.message)
+    }
+
+    @Test
+    fun upgradeCost_usesRoundNumberStepsByCurrentLevel() {
+        assertEquals(20f, upgradeCost(BaseState(1, Offset.Zero, Owner.PLAYER, BaseType.COMMAND, 10f, 1)), 0.001f)
+        assertEquals(30f, upgradeCost(BaseState(1, Offset.Zero, Owner.PLAYER, BaseType.COMMAND, 10f, 2)), 0.001f)
+        assertEquals(50f, upgradeCost(BaseState(1, Offset.Zero, Owner.PLAYER, BaseType.COMMAND, 10f, 4)), 0.001f)
+    }
+
+    @Test
+    fun upgradeBase_withInsufficientFundsUsesRoundNumberRequirementMessage() {
+        val base = BaseState(
+            id = 1,
+            position = Offset.Zero,
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 1
+        )
+        val state = matchState(bases = listOf(base), playerMoney = 19f)
+
+        val updated = upgradeBase(state, baseId = 1)
+
+        assertEquals(19f, updated.playerMoney, 0.001f)
+        assertEquals(1, updated.bases.single().capLevel)
+        assertEquals("Need 20 funds", updated.message)
+    }
+
+    @Test
+    fun onScreenTap_selectingPlayerBaseKeepsTransientHintUntilExpiry() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(500f, 500f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(playerBase),
+            message = "Tap one of your bases first",
+            messageExpiresAtSeconds = 1.5f
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(playerBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertEquals(setOf(playerBase.id), updated.selectedBaseIds)
+        assertEquals("Tap one of your bases first", updated.message)
+        assertEquals(1.5f, updated.messageExpiresAtSeconds ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun stepMatch_enemyAiSpendsRoundUpgradeCostWhenBuyingCapacity() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 25f, 2),
+                BaseState(2, Offset(200f, 100f), Owner.AI_1, BaseType.COMMAND, 9f, 1)
+            ),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 20f, 0f))
+        )
+
+        val updated = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
+
+        assertTrue(updated.fleets.isEmpty())
+        assertEquals(2, updated.bases.first { it.id == 2 }.capLevel)
+        assertEquals(0f, updated.aiStates.getValue(Owner.AI_1).money, 0.001f)
     }
 
     @Test

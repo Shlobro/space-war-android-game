@@ -65,8 +65,8 @@ internal fun onScreenTap(
         }
         return state.copy(
             selectedBaseIds = nextSelected,
-            message = if (state.messageExpiresAtSeconds != null) "" else state.message,
-            messageExpiresAtSeconds = null
+            message = state.message,
+            messageExpiresAtSeconds = state.messageExpiresAtSeconds
         )
     }
 
@@ -167,7 +167,7 @@ private fun upgradeBaseForOwner(
 
     if (availableMoney < cost) {
         return if (showMessage && owner == Owner.PLAYER) {
-            state.copy(message = "Need $cost funds", messageExpiresAtSeconds = null)
+            state.copy(message = "Need ${formatFunds(cost)} funds", messageExpiresAtSeconds = null)
         } else {
             state
         }

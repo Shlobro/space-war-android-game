@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -115,7 +116,7 @@ internal fun InGameHud(
 private fun FundsHudChip(content: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xCC2D2110)),
+        colors = CardDefaults.cardColors(containerColor = HudFundsChipBackground),
         shape = RoundedCornerShape(20.dp)
     ) {
         Row(
@@ -126,13 +127,13 @@ private fun FundsHudChip(content: String, modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .sizeIn(minWidth = 26.dp, minHeight = 26.dp)
-                    .background(Color(0xFFFFDA62), CircleShape)
-                    .border(1.dp, Color(0x66FFF0B0), CircleShape),
+                    .background(HudFundsBadgeBackground, CircleShape)
+                    .border(1.dp, HudFundsBadgeBorder, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "$",
-                    color = Color(0xFF4B3300),
+                    color = HudFundsBadgeText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Black
                 )
@@ -140,14 +141,14 @@ private fun FundsHudChip(content: String, modifier: Modifier = Modifier) {
             Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
                     text = stringResource(R.string.hud_funds_label),
-                    color = Color(0xFFE8C45A),
+                    color = HudFundsLabelText,
                     fontSize = 10.sp,
-                    letterSpacing = 1.2.sp,
+                    letterSpacing = 0.12.em,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = content,
-                    color = Color(0xFFFFE28A),
+                    color = HudFundsValueText,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Black,
                     maxLines = 1,
