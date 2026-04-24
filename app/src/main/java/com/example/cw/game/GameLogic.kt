@@ -26,7 +26,7 @@ internal fun onScreenTap(
         if (isDoubleTap && state.selectedBaseIds.isNotEmpty()) {
             val selectedSources = state.bases.filter { it.id in state.selectedBaseIds && it.owner == Owner.PLAYER }
             if (selectedSources.isEmpty()) {
-                return state.copy(selectedBaseIds = emptySet(), message = "Selection cleared")
+                return state.copy(selectedBaseIds = emptySet())
             }
 
             var updatedState = state
@@ -54,12 +54,7 @@ internal fun onScreenTap(
             state.selectedBaseIds + tappedBase.id
         }
         return state.copy(
-            selectedBaseIds = nextSelected,
-            message = when (nextSelected.size) {
-                0 -> "Selection cleared"
-                1 -> "1 base selected"
-                else -> "${nextSelected.size} bases selected"
-            }
+            selectedBaseIds = nextSelected
         )
     }
 
@@ -69,7 +64,7 @@ internal fun onScreenTap(
 
     val selectedSources = state.bases.filter { it.id in state.selectedBaseIds && it.owner == Owner.PLAYER }
     if (selectedSources.isEmpty()) {
-        return state.copy(selectedBaseIds = emptySet(), message = "Selection cleared")
+        return state.copy(selectedBaseIds = emptySet())
     }
 
     var updatedState = state

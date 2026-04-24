@@ -1,6 +1,8 @@
 package com.example.cw.game
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.IntSize
 import com.example.cw.game.levels.LevelAiDefinition
 import com.example.cw.game.levels.LevelBaseDefinition
 import com.example.cw.game.levels.LevelDefinition
@@ -12,6 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GameLogicTest {
+    private val viewportSize = IntSize(1000, 1000)
+    private val testWorldBounds = WorldBounds(width = 1000f, height = 1600f)
+
     @Test
     fun sendFleet_launchesHalfTheUnitsAndCreatesFleet() {
         val state = createMatch(sampleLevel())
@@ -158,6 +163,129 @@ class GameLogicTest {
     }
 
     @Test
+    fun onScreenTap_selectingPlayerBaseKeepsExistingMessage() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(500f, 500f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(playerBase),
+            message = "Testing"
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(playerBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertEquals(setOf(playerBase.id), updated.selectedBaseIds)
+        assertEquals("Testing", updated.message)
+    }
+
+    @Test
+    fun onScreenTap_deselectingPlayerBaseKeepsExistingMessage() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(500f, 500f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(playerBase),
+            selectedBaseIds = setOf(playerBase.id),
+            message = "Testing"
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(playerBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertTrue(updated.selectedBaseIds.isEmpty())
+        assertEquals("Testing", updated.message)
+    }
+
+    @Test
+    fun onScreenTap_doubleTapWithOnlyNonPlayerSelectionClearsSelectionWithoutMessageChange() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(500f, 500f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val enemyBase = BaseState(
+            id = 2,
+            position = Offset(650f, 500f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(playerBase, enemyBase),
+            selectedBaseIds = setOf(enemyBase.id),
+            message = "Testing"
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(playerBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = true
+        )
+
+        assertTrue(updated.selectedBaseIds.isEmpty())
+        assertEquals("Testing", updated.message)
+    }
+
+    @Test
+    fun onScreenTap_enemyTargetWithOnlyNonPlayerSelectionClearsSelectionWithoutMessageChange() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(500f, 500f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val enemyBase = BaseState(
+            id = 2,
+            position = Offset(650f, 500f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(playerBase, enemyBase),
+            selectedBaseIds = setOf(enemyBase.id),
+            message = "Testing"
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(enemyBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertTrue(updated.selectedBaseIds.isEmpty())
+        assertEquals("Testing", updated.message)
+    }
+
+    @Test
     fun selectedUpgradablePlayerBase_hidesUpgradeButtonAtMaxLevel() {
         val maxedBase = BaseState(
             id = 1,
@@ -251,7 +379,7 @@ class GameLogicTest {
         message: String = ""
     ): MatchState {
         return MatchState(
-            worldBounds = WorldBounds(),
+            worldBounds = testWorldBounds,
             bases = bases,
             fleets = fleets,
             obstacles = emptyList(),
@@ -264,6 +392,14 @@ class GameLogicTest {
             levelId = 1,
             levelName = "Test",
             isPaused = false
+        )
+    }
+
+    private fun tapAt(worldPosition: Offset): Offset {
+        return worldToScreen(
+            offset = worldPosition,
+            canvasSize = Size(viewportSize.width.toFloat(), viewportSize.height.toFloat()),
+            worldBounds = testWorldBounds
         )
     }
 }
