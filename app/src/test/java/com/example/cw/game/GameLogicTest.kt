@@ -201,6 +201,26 @@ class GameLogicTest {
         assertEquals(upgradableBase, upgradeBase)
     }
 
+    @Test
+    fun baseLabelLayout_placesLevelLabelBelowUnitCount() {
+        val baseRadius = 36f
+        val layout = baseLabelLayout(baseRadius)
+
+        assertTrue(layout.levelOffsetY > layout.unitsOffsetY)
+        assertTrue(layout.levelOffsetY <= baseRadius - 4f)
+        assertEquals(-(baseRadius + 16f), layout.selectedOffsetY, 0.001f)
+    }
+
+    @Test
+    fun baseLabelLayout_keepsLevelLabelInsideSmallRenderedBase() {
+        val smallRenderedRadius = 12.96f
+
+        val layout = baseLabelLayout(smallRenderedRadius)
+
+        assertTrue(layout.levelOffsetY > layout.unitsOffsetY)
+        assertTrue(layout.levelOffsetY < smallRenderedRadius)
+    }
+
     private fun sampleLevel(): LevelDefinition {
         return LevelDefinition(
             schemaVersion = 2,

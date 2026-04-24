@@ -24,3 +24,8 @@ build/
 
 .claude/
 things.txt
+
+.gradle-user/
+.kotlin/
+.android-user/
+

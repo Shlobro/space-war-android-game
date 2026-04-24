@@ -8,7 +8,7 @@
 
 - `GameApp.kt`: Top-level Compose entry for the game feature. Owns screen navigation, campaign state, active match state, packaged level loading, and the frame-timed simulation loop.
 - `GameScreens.kt`: Menu, asset-backed level selection, upgrade screen, in-game HUD, pause overlay, level-end overlay, and the selected-base upgrade affordance that only appears for player-owned bases still below `maxLevel`.
-- `GameCanvas.kt`: Custom canvas rendering for the starfield, obstacles, bases, fleet trails, and fleets.
+- `GameCanvas.kt`: Custom canvas rendering for the starfield, obstacles, bases, fleet trails, and fleets. Base labels show current unit count in the center and the base level as a small number near the bottom edge using radius-scaled layout so the label stays inside small rendered nodes.
 - `GameLogic.kt`: Input handling, fleet launching, base upgrades, frame stepping, AI decisions, ship production, combat resolution, arrival handling, and selection cleanup when ownership changes.
 - `GameWorld.kt`: Match creation from authored level definitions, route building around obstacles, coordinate conversion, and shared world geometry helpers.
 - `GameModel.kt`: Immutable state models and enums for campaign progress, match state, world bounds, bases, fleets, obstacles, ownership, and base types.

@@ -28,6 +28,20 @@ internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
         }
     }
+    val levelPaint = remember(density) {
+        Paint().apply {
+            color = android.graphics.Color.argb(235, 255, 255, 255)
+            textAlign = Paint.Align.CENTER
+            textSize = with(density) { 10.sp.toPx() }
+            isAntiAlias = true
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+        }
+    }
+    val selectedPaint = remember(density) {
+        Paint(labelPaint).apply {
+            textSize = with(density) { 10.sp.toPx() }
+        }
+    }
     val fleetPaint = remember(density) {
         Paint().apply {
             color = android.graphics.Color.WHITE
@@ -43,7 +57,9 @@ internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
         state.obstacles.forEach { obstacle -> drawObstacle(obstacle, state) }
         state.bases.forEach { base -> drawBaseAura(base, base.id in state.selectedBaseIds, state) }
         drawFleetTrails(state)
-        state.bases.forEach { base -> drawBase(base, labelPaint, base.id in state.selectedBaseIds, state) }
+        state.bases.forEach { base ->
+            drawBase(base, labelPaint, levelPaint, selectedPaint, base.id in state.selectedBaseIds, state)
+        }
         state.fleets.forEach { fleet -> drawFleet(fleet, fleetPaint, state) }
     }
 }
@@ -111,11 +127,14 @@ private fun DrawScope.drawBaseAura(base: BaseState, selected: Boolean, state: Ma
 private fun DrawScope.drawBase(
     base: BaseState,
     labelPaint: Paint,
+    levelPaint: Paint,
+    selectedPaint: Paint,
     selected: Boolean,
     state: MatchState
 ) {
     val center = worldToScreen(base.position, size, state.worldBounds)
     val baseRadius = base.radius * scale(size, state.worldBounds)
+    val labelLayout = baseLabelLayout(baseRadius)
     val fillColor = base.owner.color
 
     if (base.type == BaseType.FAST) {
@@ -161,17 +180,22 @@ private fun DrawScope.drawBase(
     drawContext.canvas.nativeCanvas.drawText(
         base.units.toInt().toString(),
         center.x,
-        center.y + 6f,
+        center.y + labelLayout.unitsOffsetY,
         labelPaint
+    )
+    drawContext.canvas.nativeCanvas.drawText(
+        base.capLevel.toString(),
+        center.x,
+        center.y + labelLayout.levelOffsetY,
+        levelPaint
     )
     if (selected) {
         drawContext.canvas.nativeCanvas.drawText(
             "SELECTED",
             center.x,
-            center.y - baseRadius - 16f,
-            labelPaint.apply { textSize *= 0.72f }
+            center.y + labelLayout.selectedOffsetY,
+            selectedPaint
         )
-        labelPaint.textSize /= 0.72f
     }
 }
 
@@ -215,5 +239,23 @@ private fun DrawScope.drawFleet(fleet: FleetState, fleetPaint: Paint, state: Mat
         center.x,
         center.y + 4f,
         fleetPaint
+    )
+}
+
+internal data class BaseLabelLayout(
+    val unitsOffsetY: Float,
+    val levelOffsetY: Float,
+    val selectedOffsetY: Float
+)
+
+internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
+    val unitsOffsetY = (baseRadius * 0.08f).coerceIn(2f, 5f)
+    val minLevelOffsetY = baseRadius * 0.45f
+    val maxLevelOffsetY = (baseRadius - 4f).coerceAtLeast(minLevelOffsetY)
+    val levelOffsetY = (baseRadius * 0.58f).coerceIn(minLevelOffsetY, maxLevelOffsetY)
+    return BaseLabelLayout(
+        unitsOffsetY = unitsOffsetY,
+        levelOffsetY = levelOffsetY,
+        selectedOffsetY = -baseRadius - 16f
     )
 }
