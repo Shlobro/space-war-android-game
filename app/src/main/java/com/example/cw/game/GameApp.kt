@@ -164,7 +164,7 @@ fun GameApp() {
                         InGameHud(
                             state = activeMatch,
                             onOpenMenu = {
-                                matchState = activeMatch.copy(isPaused = true)
+                                matchState = togglePause(activeMatch)
                             }
                         )
 
@@ -193,3 +193,5 @@ fun GameApp() {
         }
     }
 }
+
+internal fun togglePause(state: MatchState): MatchState = state.copy(isPaused = !state.isPaused)

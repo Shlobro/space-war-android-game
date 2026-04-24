@@ -234,7 +234,7 @@ internal fun stepMatch(state: MatchState, dt: Float, cashIncomeMultiplier: Float
     )
 }
 
-private fun ownerHasPresence(state: MatchState, owner: Owner): Boolean {
+internal fun ownerHasPresence(state: MatchState, owner: Owner): Boolean {
     return state.bases.any { it.owner == owner } || state.fleets.any { it.owner == owner }
 }
 

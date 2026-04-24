@@ -557,6 +557,103 @@ class GameLogicTest {
     }
 
     @Test
+    fun inGameHudSummary_formatsFundsAndLevelName() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(
+                    id = 1,
+                    position = Offset(100f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            ),
+            playerMoney = 42f
+        ).copy(levelName = "Orbit Line")
+
+        val summary = inGameHudSummary(state)
+
+        assertEquals("Orbit Line", summary.levelName)
+        assertEquals("42", summary.fundsLabel)
+        assertEquals("Clear", summary.rivalsLabel)
+    }
+
+    @Test
+    fun inGameHudSummary_countsOnlyRemainingAiOwners() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(
+                    id = 1,
+                    position = Offset(100f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 2,
+                    position = Offset(200f, 100f),
+                    owner = Owner.AI_1,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 3,
+                    position = Offset(300f, 100f),
+                    owner = Owner.AI_1,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 4,
+                    position = Offset(400f, 100f),
+                    owner = Owner.AI_3,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            ),
+            fleets = listOf(
+                FleetState(
+                    id = 1,
+                    owner = Owner.AI_2,
+                    sourceId = 99,
+                    targetId = 1,
+                    position = Offset(250f, 140f),
+                    path = listOf(Offset(260f, 150f)),
+                    pathIndex = 0,
+                    units = 6f,
+                    speed = 120f,
+                    arrivalMultiplier = 1f,
+                    fleetDamageMultiplier = 1f,
+                    type = BaseType.COMMAND
+                )
+            ),
+            aiStates = mapOf(
+                Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 10f, 1f),
+                Owner.AI_2 to AiRuntimeState(AiType.STANDARD, 10f, 1f),
+                Owner.AI_3 to AiRuntimeState(AiType.STANDARD, 10f, 1f)
+            )
+        )
+
+        val summary = inGameHudSummary(state)
+
+        assertEquals("3 Left", summary.rivalsLabel)
+    }
+
+    @Test
+    fun togglePause_flipsPausedState() {
+        val paused = togglePause(matchState(bases = emptyList()))
+        val resumed = togglePause(paused)
+
+        assertTrue(paused.isPaused)
+        assertTrue(!resumed.isPaused)
+    }
+
+    @Test
     fun baseLabelLayout_placesLevelLabelBelowUnitCount() {
         val baseRadius = 36f
         val layout = baseLabelLayout(baseRadius)

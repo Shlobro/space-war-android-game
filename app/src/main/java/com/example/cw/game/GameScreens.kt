@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +40,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,12 @@ import com.example.cw.game.levels.isLevelUnlocked
 
 internal const val UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP = 104
 internal const val UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP = 40
+
+internal data class InGameHudSummary(
+    val levelName: String,
+    val fundsLabel: String,
+    val rivalsLabel: String
+)
 
 @Composable
 internal fun HomeScreen(
@@ -204,59 +212,122 @@ internal fun InGameHud(
     state: MatchState,
     onOpenMenu: () -> Unit
 ) {
+    val hudSummary = inGameHudSummary(state)
+
     Column(
         modifier = Modifier
             .statusBarsPadding()
             .navigationBarsPadding()
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)),
-            shape = RoundedCornerShape(22.dp),
+        Row(
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .weight(1f)
+                    .padding(end = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(state.levelName, color = Color(0xFFA7C0D8), fontWeight = FontWeight.SemiBold)
-                    Text("Your Funds ${state.playerMoney.toInt()}", color = Color.White, fontWeight = FontWeight.Bold)
-                    state.aiStates.entries.sortedBy { it.key.ordinal }.forEach { (owner, aiState) ->
-                        Text(
-                            "${owner.label} Funds ${aiState.money.toInt()}",
-                            color = owner.color,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-                Text(
-                    "Menu",
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.pointerInput(state.status, state.isPaused) {
-                        detectTapGestures(onTap = { onOpenMenu() })
-                    }
+                HudChip(
+                    label = "Level",
+                    content = hudSummary.levelName,
+                    modifier = Modifier.weight(1f)
+                )
+                HudChip(
+                    label = "Funds",
+                    content = hudSummary.fundsLabel
+                )
+                HudChip(
+                    label = "Rivals",
+                    content = hudSummary.rivalsLabel
                 )
             }
+
+            HudActionChip(
+                label = if (state.isPaused) "Resume" else "Pause",
+                onTap = onOpenMenu
+            )
         }
 
         if (state.message.isNotBlank()) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xC0182735)),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
                     text = state.message,
                     color = Color(0xFFEAF4FF),
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    fontSize = 13.sp
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HudChip(
+    label: String,
+    content: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = label,
+                color = Color(0xFFA7C0D8),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = content,
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun HudActionChip(
+    label: String,
+    onTap: () -> Unit
+) {
+    Card(
+        onClick = onTap,
+        colors = CardDefaults.cardColors(containerColor = Color(0xCCF6CB7D)),
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier
+            .sizeIn(minWidth = 74.dp)
+            .heightIn(min = 48.dp)
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                color = Color(0xFF102132),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp
+            )
         }
     }
 }
@@ -436,4 +507,23 @@ internal fun selectedUpgradablePlayerBase(state: MatchState): BaseState? {
     val selectedBaseId = state.selectedBaseIds.first()
     val base = state.bases.firstOrNull { it.id == selectedBaseId && it.owner == Owner.PLAYER } ?: return null
     return base.takeIf { it.capLevel < it.maxLevel }
+}
+
+internal fun inGameHudSummary(state: MatchState): InGameHudSummary {
+    val rivalsRemaining = state.aiStates.keys
+        .asSequence()
+        .filter { it.isAi }
+        .count { ownerHasPresence(state, it) }
+
+    val rivalsLabel = when (rivalsRemaining) {
+        0 -> "Clear"
+        1 -> "1 Left"
+        else -> "$rivalsRemaining Left"
+    }
+
+    return InGameHudSummary(
+        levelName = state.levelName,
+        fundsLabel = formatFunds(state.playerMoney),
+        rivalsLabel = rivalsLabel
+    )
 }

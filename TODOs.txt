@@ -1,5 +1,3 @@
 currently obsticles effect pathing in a weird way. but the units are definately not avoiding the visual obsacles. 
 
 each level should have an amount of stars you can get from completeing it, the amount of stars depends on how fast you complete it. minimum is 1 star max is 3. impliment this into the editor as well that the maker can decide the times for 2 and 3 stars. the UI in the level menu should show how many stars you got from each level. the stars are currency to be used out of levels so it should also show how many stars the player has outside of a level.
-
-fix the in level UI the top takes too much room and is to cluttured. get rid of what we can like and take up less space.
