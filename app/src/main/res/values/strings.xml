@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CW</string>
+    <string name="hud_funds_label">Funds</string>
 </resources>

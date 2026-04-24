@@ -1,6 +1,7 @@
 package com.example.cw.game
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -49,6 +52,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.example.cw.R
 import kotlin.math.roundToInt
 
 internal const val UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP = 104
@@ -111,28 +115,45 @@ internal fun InGameHud(
 private fun FundsHudChip(content: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)),
-        shape = RoundedCornerShape(18.dp)
+        colors = CardDefaults.cardColors(containerColor = Color(0xCC2D2110)),
+        shape = RoundedCornerShape(20.dp)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "$",
-                color = AccentGold,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = content,
-                color = AccentGold,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Box(
+                modifier = Modifier
+                    .sizeIn(minWidth = 26.dp, minHeight = 26.dp)
+                    .background(Color(0xFFFFDA62), CircleShape)
+                    .border(1.dp, Color(0x66FFF0B0), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$",
+                    color = Color(0xFF4B3300),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Text(
+                    text = stringResource(R.string.hud_funds_label),
+                    color = Color(0xFFE8C45A),
+                    fontSize = 10.sp,
+                    letterSpacing = 1.2.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = content,
+                    color = Color(0xFFFFE28A),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

@@ -10,6 +10,8 @@ import kotlin.math.min
 internal const val ENEMY_AI_THINK_INTERVAL_SECONDS = 5f
 internal const val BASE_FUNDS_PER_SECOND = 0.6f
 internal const val PER_OWNED_BASE_FUNDS_PER_SECOND = 0.25f
+internal const val INVALID_TAP_HINT_DURATION_SECONDS = 1.5f
+internal const val AI_PRESSURE_ATTACK_MIN_ODDS = 1.2f
 private const val TAP_SLOP_PX = 56f
 
 internal fun onScreenTap(
@@ -51,7 +53,8 @@ internal fun onScreenTap(
                     "Reinforced from $launchedCount bases"
                 } else {
                     "Not enough ships to send"
-                }
+                },
+                messageExpiresAtSeconds = null
             )
         }
 
@@ -61,12 +64,17 @@ internal fun onScreenTap(
             state.selectedBaseIds + tappedBase.id
         }
         return state.copy(
-            selectedBaseIds = nextSelected
+            selectedBaseIds = nextSelected,
+            message = if (state.messageExpiresAtSeconds != null) "" else state.message,
+            messageExpiresAtSeconds = null
         )
     }
 
     if (state.selectedBaseIds.isEmpty()) {
-        return state.copy(message = "Select your bases first")
+        return state.copy(
+            message = "Tap one of your bases first",
+            messageExpiresAtSeconds = state.elapsedSeconds + INVALID_TAP_HINT_DURATION_SECONDS
+        )
     }
 
     val selectedSources = state.bases.filter { it.id in state.selectedBaseIds && it.owner == Owner.PLAYER }
@@ -89,7 +97,8 @@ internal fun onScreenTap(
             "Launched from $launchedCount bases"
         } else {
             "Not enough ships to send"
-        }
+        },
+        messageExpiresAtSeconds = null
     )
 }
 
@@ -100,7 +109,7 @@ internal fun sendFleet(state: MatchState, sourceId: Int, targetId: Int, sender: 
 
     val departingUnits = floor(source.units * 0.5f)
     if (departingUnits < 1f) {
-        return state.copy(message = "Not enough ships to send")
+        return state.copy(message = "Not enough ships to send", messageExpiresAtSeconds = null)
     }
 
     val updatedBases = state.bases.map {
@@ -127,7 +136,8 @@ internal fun sendFleet(state: MatchState, sourceId: Int, targetId: Int, sender: 
         bases = updatedBases,
         fleets = state.fleets + fleet,
         nextFleetId = state.nextFleetId + 1,
-        message = if (sender == Owner.PLAYER) "Launched ${departingUnits.toInt()} ships" else state.message
+        message = if (sender == Owner.PLAYER) "Launched ${departingUnits.toInt()} ships" else state.message,
+        messageExpiresAtSeconds = if (sender == Owner.PLAYER) null else state.messageExpiresAtSeconds
     )
 }
 
@@ -144,7 +154,7 @@ private fun upgradeBaseForOwner(
     val base = state.bases.firstOrNull { it.id == baseId && it.owner == owner } ?: return state
     if (base.capLevel >= base.maxLevel) {
         return if (showMessage && owner == Owner.PLAYER) {
-            state.copy(message = "Base is at max level")
+            state.copy(message = "Base is at max level", messageExpiresAtSeconds = null)
         } else {
             state
         }
@@ -157,7 +167,7 @@ private fun upgradeBaseForOwner(
 
     if (availableMoney < cost) {
         return if (showMessage && owner == Owner.PLAYER) {
-            state.copy(message = "Need $cost funds")
+            state.copy(message = "Need $cost funds", messageExpiresAtSeconds = null)
         } else {
             state
         }
@@ -175,7 +185,8 @@ private fun upgradeBaseForOwner(
         Owner.PLAYER -> state.copy(
             playerMoney = state.playerMoney - cost,
             bases = updatedBases,
-            message = if (showMessage) "Base upgraded" else state.message
+            message = if (showMessage) "Base upgraded" else state.message,
+            messageExpiresAtSeconds = if (showMessage) null else state.messageExpiresAtSeconds
         )
 
         else -> {
@@ -233,17 +244,25 @@ internal fun stepMatch(state: MatchState, dt: Float, cashIncomeMultiplier: Float
     } else {
         0
     }
+    val messageExpired = aiState.messageExpiresAtSeconds?.let { elapsedSeconds >= it } == true
+    val activeMessage = when (status) {
+        MatchStatus.RUNNING -> if (messageExpired) "" else aiState.message
+        MatchStatus.PLAYER_WON -> "All AI structures captured"
+        MatchStatus.PLAYER_LOST -> "Your network collapsed"
+    }
+    val activeMessageExpiry = if (status == MatchStatus.RUNNING && !messageExpired) {
+        aiState.messageExpiresAtSeconds
+    } else {
+        null
+    }
 
     return aiState.copy(
         selectedBaseIds = normalizedSelection,
         status = status,
         elapsedSeconds = elapsedSeconds,
         earnedStars = earnedStars,
-        message = when (status) {
-            MatchStatus.RUNNING -> aiState.message
-            MatchStatus.PLAYER_WON -> "All AI structures captured"
-            MatchStatus.PLAYER_LOST -> "Your network collapsed"
-        }
+        message = activeMessage,
+        messageExpiresAtSeconds = activeMessageExpiry
     )
 }
 
@@ -310,7 +329,7 @@ private fun runStandardAiTurn(state: MatchState, owner: Owner): MatchState {
                 updatedState = upgradeBaseForOwner(updatedState, source.id, owner, showMessage = false)
             } else if (source.units >= source.cap.toFloat()) {
                 val pressureTarget = preferredPressureTarget(source, nearbyTargets)
-                if (pressureTarget != null) {
+                if (pressureTarget != null && source.units >= pressureTarget.units * AI_PRESSURE_ATTACK_MIN_ODDS) {
                     updatedState = sendFleet(updatedState, source.id, pressureTarget.id, owner)
                 }
             }

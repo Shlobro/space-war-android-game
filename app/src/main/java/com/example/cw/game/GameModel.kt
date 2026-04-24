@@ -18,6 +18,7 @@ internal data class MatchState(
     val nextFleetId: Int,
     val selectedBaseIds: Set<Int>,
     val message: String,
+    val messageExpiresAtSeconds: Float? = null,
     val status: MatchStatus,
     val levelId: Int,
     val levelName: String,

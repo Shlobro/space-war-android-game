@@ -16,7 +16,7 @@ The shared level format is versioned JSON. Each level defines:
 
 - metadata used by the level list: `levelId`, `name`, `description`, `sortOrder`, optional `unlockAfterLevelId`, and the `twoStarTimeSeconds` plus `threeStarTimeSeconds` thresholds used for campaign scoring
 - world bounds: `worldWidth`, `worldHeight`
-- runtime intro text: `introMessage`
+- authored intro text metadata: `introMessage`. The runtime keeps missions free of an opening HUD banner, but the field remains part of the shared level document.
 - `bases[]`: id, position, owner, type, starting units, `capLevel`, and `maxLevel`
 - `obstacles[]`: position and radius
 

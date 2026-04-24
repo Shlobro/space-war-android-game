@@ -169,7 +169,7 @@ class GameLogicTest {
     }
 
     @Test
-    fun stepMatch_enemyAiAttacksWhenBaseIsFullAndAtMaxLevel() {
+    fun stepMatch_enemyAiAttacksWhenBaseIsFullAndAtMaxLevelWithGoodOdds() {
         val state = matchState(
             bases = listOf(
                 BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 20f, 2),
@@ -188,6 +188,23 @@ class GameLogicTest {
         assertEquals(3, updated.fleets.single().targetId)
         assertEquals(10f, updated.fleets.single().units)
         assertEquals(10f, updated.bases.first { it.id == 2 }.units)
+    }
+
+    @Test
+    fun stepMatch_enemyAiSkipsPressureAttackWhenOddsAreBad() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 25f, 2),
+                BaseState(2, Offset(200f, 100f), Owner.AI_1, BaseType.COMMAND, 20f, 2, maxLevel = 2),
+                BaseState(3, Offset(260f, 100f), Owner.NEUTRAL, BaseType.COMMAND, 18f, 2)
+            ),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 0f))
+        )
+
+        val updated = stepMatch(state, dt = 0.016f, cashIncomeMultiplier = 1f)
+
+        assertTrue(updated.fleets.isEmpty())
+        assertEquals(20f, updated.bases.first { it.id == 2 }.units)
     }
 
     @Test
@@ -745,6 +762,75 @@ class GameLogicTest {
     }
 
     @Test
+    fun onScreenTap_enemyTapWithoutSelection_showsTransientHint() {
+        val neutralBase = BaseState(
+            id = 2,
+            position = Offset(500f, 500f),
+            owner = Owner.NEUTRAL,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(
+                BaseState(
+                    id = 1,
+                    position = Offset(100f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                neutralBase
+            ),
+            message = ""
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(neutralBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertTrue(updated.selectedBaseIds.isEmpty())
+        assertEquals("Tap one of your bases first", updated.message)
+        assertEquals(INVALID_TAP_HINT_DURATION_SECONDS, updated.messageExpiresAtSeconds ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun stepMatch_clearsExpiredTransientHint() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(
+                    id = 1,
+                    position = Offset(100f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 2,
+                    position = Offset(300f, 100f),
+                    owner = Owner.AI_1,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            ),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 5f)),
+            message = "Tap one of your bases first",
+            messageExpiresAtSeconds = 1.5f
+        )
+
+        val updated = stepMatch(state, dt = 1.5f, cashIncomeMultiplier = 1f)
+
+        assertEquals("", updated.message)
+        assertNull(updated.messageExpiresAtSeconds)
+    }
+
+    @Test
     fun togglePause_flipsPausedState() {
         val paused = togglePause(matchState(bases = emptyList()))
         val resumed = togglePause(paused)
@@ -964,7 +1050,8 @@ class GameLogicTest {
         aiStates: Map<Owner, AiRuntimeState> = emptyMap(),
         nextFleetId: Int = 1,
         selectedBaseIds: Set<Int> = emptySet(),
-        message: String = ""
+        message: String = "",
+        messageExpiresAtSeconds: Float? = null
     ): MatchState {
         return MatchState(
             worldBounds = testWorldBounds,
@@ -976,6 +1063,7 @@ class GameLogicTest {
             nextFleetId = nextFleetId,
             selectedBaseIds = selectedBaseIds,
             message = message,
+            messageExpiresAtSeconds = messageExpiresAtSeconds,
             status = MatchStatus.RUNNING,
             levelId = 1,
             levelName = "Test",

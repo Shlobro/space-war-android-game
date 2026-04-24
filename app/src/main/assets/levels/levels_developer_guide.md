@@ -18,6 +18,7 @@ AI-owned bases are configured through level-level `aiControllers[]` entries, whi
 `twoStarTimeSeconds` and `threeStarTimeSeconds` define the completion-time targets for earning 2 or 3 stars; finishing slower still awards 1 star, and the 3-star target must be lower than the 2-star target.
 
 The authoritative field definitions and validation live in `app/src/main/java/com/example/cw/game/levels/levels_developer_guide.md`.
+`introMessage` remains part of the shared authored document even though the Android runtime starts missions without an opening HUD banner.
 
 ## Files
 

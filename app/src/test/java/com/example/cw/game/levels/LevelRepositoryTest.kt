@@ -134,7 +134,7 @@ class LevelRepositoryTest {
     }
 
     @Test
-    fun createMatch_preservesLevelValues() {
+    fun createMatch_preservesLevelValuesAndStartsWithoutIntroBanner() {
         val level = LevelDefinition(
             schemaVersion = 2,
             levelId = 9,
@@ -160,7 +160,7 @@ class LevelRepositoryTest {
         assertEquals(90, match.starThresholds.twoStarTimeSeconds)
         assertEquals(1200f, match.worldBounds.width)
         assertEquals(1800f, match.worldBounds.height)
-        assertEquals("Testing", match.message)
+        assertEquals("", match.message)
         assertEquals(BASE_RADIUS_MIN + (6 - 1) * RADIUS_PER_LEVEL, match.bases.first().radius)
         assertEquals(BaseType.FAST, match.bases.first().type)
         assertEquals(90f, match.obstacles.single().radius)

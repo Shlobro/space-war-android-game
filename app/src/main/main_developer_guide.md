@@ -12,7 +12,7 @@
 
 - `java/`: Kotlin source for the application entry point, gameplay systems, and level-loading code. See `java/java_developer_guide.md`.
 - `assets/`: Packaged runtime data that ships with the app, including authored level JSON files. See `assets/assets_developer_guide.md`.
-- `res/`: Android resources such as strings, colors, themes, and launcher assets.
+- `res/`: Android resources such as strings, colors, themes, and launcher assets. See `res/res_developer_guide.md`.
 
 ## Working In This Folder
 
