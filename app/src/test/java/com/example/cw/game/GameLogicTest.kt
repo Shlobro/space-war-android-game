@@ -16,6 +16,10 @@ import org.junit.Test
 class GameLogicTest {
     private val viewportSize = IntSize(1000, 1000)
     private val testWorldBounds = WorldBounds(width = 1000f, height = 1600f)
+    private val upgradeNodeFallbackButtonSize = IntSize(
+        UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP,
+        UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP
+    )
 
     @Test
     fun sendFleet_launchesHalfTheUnitsAndCreatesFleet() {
@@ -160,6 +164,46 @@ class GameLogicTest {
         assertEquals(1, afterThink.fleets.size)
         assertEquals(10f, afterThink.fleets.single().units)
         assertEquals(10f, afterThink.bases.first { it.id == 2 }.units)
+    }
+
+    @Test
+    fun stepMatch_accruesReducedFundsPerOwnedBaseForPlayerAndAi() {
+        val aiStartingMoney = 0f
+        val state = matchState(
+            bases = listOf(
+                BaseState(
+                    id = 1,
+                    position = Offset(100f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 2,
+                    position = Offset(200f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 3,
+                    position = Offset(300f, 100f),
+                    owner = Owner.AI_1,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            ),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, aiStartingMoney, 10f))
+        )
+
+        val updated = stepMatch(state, dt = 10f, cashIncomeMultiplier = 1f)
+
+        // Player: (0.6 + 2 * 0.25) * 10s = 11.0, AI: 0f + (0.6 + 1 * 0.25) * 10s = 8.5.
+        assertEquals(11f, updated.playerMoney, 0.001f)
+        assertEquals(8.5f, updated.aiStates.getValue(Owner.AI_1).money, 0.001f)
     }
 
     @Test
@@ -538,13 +582,13 @@ class GameLogicTest {
             center = Offset(982f, 20f),
             radius = 24f,
             viewportSize = IntSize(1000, 1000),
-            buttonSize = IntSize(96, 40),
+            buttonSize = upgradeNodeFallbackButtonSize,
             baseMarginPx = 8,
             horizontalGapPx = 6,
             verticalGapPx = 4
         )
 
-        assertEquals(896, offset.x)
+        assertEquals(888, offset.x)
         assertEquals(8, offset.y)
     }
 
@@ -554,7 +598,7 @@ class GameLogicTest {
             center = Offset(300f, 500f),
             radius = 24f,
             viewportSize = IntSize(1000, 1000),
-            buttonSize = IntSize(96, 40),
+            buttonSize = upgradeNodeFallbackButtonSize,
             baseMarginPx = 8,
             horizontalGapPx = 6,
             verticalGapPx = 4
@@ -570,7 +614,7 @@ class GameLogicTest {
             center = Offset(300f, 995f),
             radius = 24f,
             viewportSize = IntSize(1000, 1000),
-            buttonSize = IntSize(96, 40),
+            buttonSize = upgradeNodeFallbackButtonSize,
             baseMarginPx = 8,
             horizontalGapPx = 6,
             verticalGapPx = 4
@@ -586,7 +630,7 @@ class GameLogicTest {
             center = Offset(20f, 500f),
             radius = 24f,
             viewportSize = IntSize(1000, 1000),
-            buttonSize = IntSize(96, 40),
+            buttonSize = upgradeNodeFallbackButtonSize,
             baseMarginPx = 8,
             horizontalGapPx = 6,
             verticalGapPx = 4,
@@ -603,7 +647,7 @@ class GameLogicTest {
             center = Offset(20f, 20f),
             radius = 16f,
             viewportSize = IntSize(80, 70),
-            buttonSize = IntSize(96, 40),
+            buttonSize = upgradeNodeFallbackButtonSize,
             baseMarginPx = 8,
             horizontalGapPx = 6,
             verticalGapPx = 4
@@ -619,14 +663,14 @@ class GameLogicTest {
             center = Offset(982f, 20f),
             radius = 24f,
             viewportSize = IntSize(1000, 1000),
-            buttonSize = IntSize(96, 40),
+            buttonSize = upgradeNodeFallbackButtonSize,
             baseMarginPx = 8,
             horizontalGapPx = 6,
             verticalGapPx = 4,
             edgeInsets = EdgeInsets(top = 32, right = 24, bottom = 48)
         )
 
-        assertEquals(872, offset.x)
+        assertEquals(864, offset.x)
         assertEquals(40, offset.y)
     }
 

@@ -47,6 +47,9 @@ import androidx.compose.ui.zIndex
 import com.example.cw.game.levels.LevelSummary
 import com.example.cw.game.levels.isLevelUnlocked
 
+internal const val UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP = 104
+internal const val UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP = 40
+
 @Composable
 internal fun HomeScreen(
     onLevels: () -> Unit,
@@ -336,7 +339,12 @@ internal fun UpgradeNodeButton(
     val cost = upgradeCost(base)
     val canAfford = state.playerMoney >= cost
     var measuredButtonSize by remember { mutableStateOf(IntSize.Zero) }
-    val fallbackButtonSize = with(density) { IntSize(104.dp.roundToPx(), 40.dp.roundToPx()) }
+    val fallbackButtonSize = with(density) {
+        IntSize(
+            UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP.dp.roundToPx(),
+            UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP.dp.roundToPx()
+        )
+    }
     val buttonSize = if (measuredButtonSize == IntSize.Zero) fallbackButtonSize else measuredButtonSize
     val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
     val safeAreaInsets = with(density) {

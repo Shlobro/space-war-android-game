@@ -8,6 +8,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 internal const val ENEMY_AI_THINK_INTERVAL_SECONDS = 5f
+internal const val BASE_FUNDS_PER_SECOND = 0.6f
+internal const val PER_OWNED_BASE_FUNDS_PER_SECOND = 0.25f
 
 internal fun onScreenTap(
     state: MatchState,
@@ -387,5 +389,5 @@ private fun capturedCapLevel(capLevel: Int): Int = max(1, capLevel - 2)
 
 private fun incomePerSecond(owner: Owner, bases: List<BaseState>, multiplier: Float): Float {
     val owned = bases.count { it.owner == owner }
-    return if (owner.isNeutral) 0f else (1.5f + owned * 0.35f) * multiplier
+    return if (owner.isNeutral) 0f else (BASE_FUNDS_PER_SECOND + owned * PER_OWNED_BASE_FUNDS_PER_SECOND) * multiplier
 }
