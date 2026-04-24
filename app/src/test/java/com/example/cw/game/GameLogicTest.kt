@@ -163,6 +163,189 @@ class GameLogicTest {
     }
 
     @Test
+    fun stepMatch_captureDropsBaseByTwoLevels() {
+        val targetBase = BaseState(
+            id = 1,
+            position = Offset(100f, 100f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 8f,
+            capLevel = 4
+        )
+        val playerBase = BaseState(
+            id = 2,
+            position = Offset(200f, 100f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val arrivingFleet = FleetState(
+            id = 1,
+            owner = Owner.PLAYER,
+            sourceId = 2,
+            targetId = 1,
+            position = targetBase.position,
+            path = listOf(targetBase.position),
+            pathIndex = 1,
+            units = 18f,
+            speed = 120f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val state = matchState(
+            bases = listOf(targetBase, playerBase),
+            fleets = listOf(arrivingFleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 1f))
+        )
+
+        val updated = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
+        val capturedBase = updated.bases.first { it.id == targetBase.id }
+
+        assertEquals(Owner.PLAYER, capturedBase.owner)
+        assertEquals(2, capturedBase.capLevel)
+        assertEquals(10f, capturedBase.units)
+    }
+
+    @Test
+    fun stepMatch_captureFromLevelTwoDropsToMinimumLevelOne() {
+        val targetBase = BaseState(
+            id = 1,
+            position = Offset(100f, 100f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 6f,
+            capLevel = 2
+        )
+        val playerBase = BaseState(
+            id = 2,
+            position = Offset(200f, 100f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val arrivingFleet = FleetState(
+            id = 1,
+            owner = Owner.PLAYER,
+            sourceId = 2,
+            targetId = 1,
+            position = targetBase.position,
+            path = listOf(targetBase.position),
+            pathIndex = 1,
+            units = 12f,
+            speed = 120f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val state = matchState(
+            bases = listOf(targetBase, playerBase),
+            fleets = listOf(arrivingFleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 1f))
+        )
+
+        val updated = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
+        val capturedBase = updated.bases.first { it.id == targetBase.id }
+
+        assertEquals(Owner.PLAYER, capturedBase.owner)
+        assertEquals(1, capturedBase.capLevel)
+        assertEquals(6f, capturedBase.units)
+    }
+
+    @Test
+    fun stepMatch_captureAtMinimumLevelKeepsLevelOneAndRemainingGarrison() {
+        val targetBase = BaseState(
+            id = 1,
+            position = Offset(100f, 100f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 3f,
+            capLevel = 1
+        )
+        val playerBase = BaseState(
+            id = 2,
+            position = Offset(200f, 100f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+        val arrivingFleet = FleetState(
+            id = 1,
+            owner = Owner.PLAYER,
+            sourceId = 2,
+            targetId = 1,
+            position = targetBase.position,
+            path = listOf(targetBase.position),
+            pathIndex = 1,
+            units = 9f,
+            speed = 120f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val state = matchState(
+            bases = listOf(targetBase, playerBase),
+            fleets = listOf(arrivingFleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 1f))
+        )
+
+        val updated = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
+        val capturedBase = updated.bases.first { it.id == targetBase.id }
+
+        assertEquals(Owner.PLAYER, capturedBase.owner)
+        assertEquals(1, capturedBase.capLevel)
+        assertEquals(6f, capturedBase.units)
+    }
+
+    @Test
+    fun stepMatch_friendlyArrivalClampsReinforcementsToCurrentCap() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(100f, 100f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 18f,
+            capLevel = 2
+        )
+        val reinforcingFleet = FleetState(
+            id = 1,
+            owner = Owner.PLAYER,
+            sourceId = 2,
+            targetId = 1,
+            position = playerBase.position,
+            path = listOf(playerBase.position),
+            pathIndex = 1,
+            units = 8f,
+            speed = 120f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val state = matchState(
+            bases = listOf(
+                playerBase,
+                BaseState(
+                    id = 2,
+                    position = Offset(200f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            ),
+            fleets = listOf(reinforcingFleet)
+        )
+
+        val updated = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
+
+        assertEquals(20f, updated.bases.first { it.id == playerBase.id }.units)
+        assertTrue(updated.fleets.isEmpty())
+    }
+
+    @Test
     fun onScreenTap_selectingPlayerBaseKeepsExistingMessage() {
         val playerBase = BaseState(
             id = 1,
@@ -378,6 +561,39 @@ class GameLogicTest {
         )
 
         assertEquals(330, offset.x)
+        assertEquals(472, offset.y)
+    }
+
+    @Test
+    fun upgradeNodeButtonOffset_clampsOverlayInsideBottomEdge() {
+        val offset = upgradeNodeButtonOffset(
+            center = Offset(300f, 995f),
+            radius = 24f,
+            viewportSize = IntSize(1000, 1000),
+            buttonSize = IntSize(96, 40),
+            baseMarginPx = 8,
+            horizontalGapPx = 6,
+            verticalGapPx = 4
+        )
+
+        assertEquals(330, offset.x)
+        assertEquals(952, offset.y)
+    }
+
+    @Test
+    fun upgradeNodeButtonOffset_clampsOverlayInsideLeftSafeInset() {
+        val offset = upgradeNodeButtonOffset(
+            center = Offset(20f, 500f),
+            radius = 24f,
+            viewportSize = IntSize(1000, 1000),
+            buttonSize = IntSize(96, 40),
+            baseMarginPx = 8,
+            horizontalGapPx = 6,
+            verticalGapPx = 4,
+            edgeInsets = EdgeInsets(left = 80)
+        )
+
+        assertEquals(88, offset.x)
         assertEquals(472, offset.y)
     }
 

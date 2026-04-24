@@ -1,7 +1,5 @@
 currently obsticles effect pathing in a weird way. but the units are definately not avoiding the visual obsacles. 
 
-when a node is captured it goes down by 2 levels. unless it is at the lowest levels in which case it either goes down by one or it is already the min
-
 Money is going up way too quickly
 
 each level should have an amount of stars you can get from completeing it, the amount of stars depends on how fast you complete it. minimum is 1 star max is 3. impliment this into the editor as well that the maker can decide the times for 2 and 3 stars. the UI in the level menu should show how many stars you got from each level. the stars are currency to be used out of levels so it should also show how many stars the player has outside of a level.

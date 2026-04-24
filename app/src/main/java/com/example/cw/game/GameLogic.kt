@@ -366,19 +366,24 @@ private fun applyFleetArrivals(
 
 private fun resolveArrival(target: BaseState, fleet: FleetState): BaseState {
     return if (target.owner == fleet.owner) {
-        target.copy(units = target.units + fleet.units * fleet.arrivalMultiplier)
+        target.copy(units = min(target.cap.toFloat(), target.units + fleet.units * fleet.arrivalMultiplier))
     } else {
         val attackPower = fleet.units * fleet.arrivalMultiplier
         if (attackPower > target.units) {
+            val capturedCapLevel = capturedCapLevel(target.capLevel)
+            val capturedCap = capturedCapLevel * 10
             target.copy(
                 owner = fleet.owner,
-                units = min(target.cap.toFloat(), attackPower - target.units)
+                units = min(capturedCap.toFloat(), attackPower - target.units),
+                capLevel = capturedCapLevel
             )
         } else {
             target.copy(units = target.units - attackPower)
         }
     }
 }
+
+private fun capturedCapLevel(capLevel: Int): Int = max(1, capLevel - 2)
 
 private fun incomePerSecond(owner: Owner, bases: List<BaseState>, multiplier: Float): Float {
     val owned = bases.count { it.owner == owner }

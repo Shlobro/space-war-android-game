@@ -6,7 +6,7 @@
 
 ## Files
 
-- `GameLogicTest.kt`: Verifies fleet launch math, player base upgrades, obstacle-aware route generation, tap-selection behavior that keeps HUD messages free of selection text even when stale non-player selections are cleared, selected-base upgrade visibility at `maxLevel`, floating upgrade-pill offset clamping near viewport edges and safe-drawing inset boundaries, selection cleanup after ownership changes during simulation, the five-second enemy AI think cadence, and canvas label layout for base-level number placement across normal and small rendered node sizes. It uses a shared `matchState(...)` fixture helper with explicit test world bounds so coordinate-hit tests stay aligned with runtime conversion rules.
+- `GameLogicTest.kt`: Verifies fleet launch math, player base upgrades, obstacle-aware route generation, capture-level downgrade behavior after successful assaults, friendly-arrival cap clamping, tap-selection behavior that keeps HUD messages free of selection text even when stale non-player selections are cleared, selected-base upgrade visibility at `maxLevel`, floating upgrade-pill offset clamping near viewport edges, safe-drawing inset boundaries, and bottom-edge cases, selection cleanup after ownership changes during simulation, the five-second enemy AI think cadence, and canvas label layout for base-level number placement across normal and small rendered node sizes. It uses a shared `matchState(...)` fixture helper with explicit test world bounds so coordinate-hit tests stay aligned with runtime conversion rules.
 
 ## Subfolders
 

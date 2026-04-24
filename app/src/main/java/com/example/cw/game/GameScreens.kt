@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -335,7 +336,7 @@ internal fun UpgradeNodeButton(
     val cost = upgradeCost(base)
     val canAfford = state.playerMoney >= cost
     var measuredButtonSize by remember { mutableStateOf(IntSize.Zero) }
-    val fallbackButtonSize = with(density) { IntSize(88.dp.roundToPx(), 40.dp.roundToPx()) }
+    val fallbackButtonSize = with(density) { IntSize(104.dp.roundToPx(), 40.dp.roundToPx()) }
     val buttonSize = if (measuredButtonSize == IntSize.Zero) fallbackButtonSize else measuredButtonSize
     val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
     val safeAreaInsets = with(density) {
@@ -368,8 +369,9 @@ internal fun UpgradeNodeButton(
                     color = if (canAfford) Color(0xFFF6CB7D) else Color(0xFF6C5A2B),
                     shape = RoundedCornerShape(50)
                 )
-                .clickable { onUpgrade(base.id) }
                 .onSizeChanged { measuredButtonSize = it }
+                .graphicsLayer { alpha = if (measuredButtonSize == IntSize.Zero) 0f else 1f }
+                .clickable(enabled = measuredButtonSize != IntSize.Zero) { onUpgrade(base.id) }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
