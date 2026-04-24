@@ -232,7 +232,7 @@ class GameLogicTest {
     }
 
     @Test
-    fun stepMatch_captureDropsBaseByTwoLevels() {
+    fun stepMatch_captureDropsBaseByTwoLevelsWithoutClampingSurvivorsToNewCap() {
         val targetBase = BaseState(
             id = 1,
             position = Offset(100f, 100f),
@@ -274,11 +274,12 @@ class GameLogicTest {
 
         assertEquals(Owner.PLAYER, capturedBase.owner)
         assertEquals(2, capturedBase.capLevel)
+        assertEquals(20f, capturedBase.cap.toFloat())
         assertEquals(10f, capturedBase.units)
     }
 
     @Test
-    fun stepMatch_captureFromLevelTwoDropsToMinimumLevelOne() {
+    fun stepMatch_captureFromLevelTwoDropsToMinimumLevelOneAndKeepsOverCapSurvivors() {
         val targetBase = BaseState(
             id = 1,
             position = Offset(100f, 100f),
@@ -303,7 +304,7 @@ class GameLogicTest {
             position = targetBase.position,
             path = listOf(targetBase.position),
             pathIndex = 1,
-            units = 12f,
+            units = 25f,
             speed = 120f,
             arrivalMultiplier = 1f,
             fleetDamageMultiplier = 1f,
@@ -320,7 +321,8 @@ class GameLogicTest {
 
         assertEquals(Owner.PLAYER, capturedBase.owner)
         assertEquals(1, capturedBase.capLevel)
-        assertEquals(6f, capturedBase.units)
+        assertEquals(10f, capturedBase.cap.toFloat())
+        assertEquals(19f, capturedBase.units)
     }
 
     @Test
@@ -370,7 +372,7 @@ class GameLogicTest {
     }
 
     @Test
-    fun stepMatch_friendlyArrivalClampsReinforcementsToCurrentCap() {
+    fun stepMatch_friendlyArrivalAllowsTemporaryOverCapReinforcements() {
         val playerBase = BaseState(
             id = 1,
             position = Offset(100f, 100f),
@@ -403,15 +405,81 @@ class GameLogicTest {
                     type = BaseType.COMMAND,
                     units = 10f,
                     capLevel = 2
+                ),
+                BaseState(
+                    id = 3,
+                    position = Offset(300f, 100f),
+                    owner = Owner.AI_1,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
                 )
             ),
-            fleets = listOf(reinforcingFleet)
+            fleets = listOf(reinforcingFleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 5f))
         )
 
         val updated = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
 
-        assertEquals(20f, updated.bases.first { it.id == playerBase.id }.units)
+        assertEquals(26f, updated.bases.first { it.id == playerBase.id }.units)
         assertTrue(updated.fleets.isEmpty())
+    }
+
+    @Test
+    fun stepMatch_overCapReinforcementsDecayTowardCapOnLaterTicks() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(100f, 100f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 18f,
+            capLevel = 2
+        )
+        val reinforcingFleet = FleetState(
+            id = 1,
+            owner = Owner.PLAYER,
+            sourceId = 2,
+            targetId = 1,
+            position = playerBase.position,
+            path = listOf(playerBase.position),
+            pathIndex = 1,
+            units = 8f,
+            speed = 120f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val state = matchState(
+            bases = listOf(
+                playerBase,
+                BaseState(
+                    id = 2,
+                    position = Offset(200f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 3,
+                    position = Offset(300f, 100f),
+                    owner = Owner.AI_1,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            ),
+            fleets = listOf(reinforcingFleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 5f))
+        )
+
+        val afterArrival = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
+        val afterDecayTick = stepMatch(afterArrival, dt = 1f, cashIncomeMultiplier = 1f)
+        val expectedAfterDecay = 26f - playerBase.productionRate
+
+        assertEquals(26f, afterArrival.bases.first { it.id == playerBase.id }.units)
+        assertEquals(expectedAfterDecay, afterDecayTick.bases.first { it.id == playerBase.id }.units, 0.001f)
+        assertTrue(afterDecayTick.bases.first { it.id == playerBase.id }.units > playerBase.cap)
     }
 
     @Test

@@ -389,15 +389,14 @@ private fun applyFleetArrivals(
 
 private fun resolveArrival(target: BaseState, fleet: FleetState): BaseState {
     return if (target.owner == fleet.owner) {
-        target.copy(units = min(target.cap.toFloat(), target.units + fleet.units * fleet.arrivalMultiplier))
+        target.copy(units = target.units + fleet.units * fleet.arrivalMultiplier)
     } else {
         val attackPower = fleet.units * fleet.arrivalMultiplier
         if (attackPower > target.units) {
             val capturedCapLevel = capturedCapLevel(target.capLevel)
-            val capturedCap = capturedCapLevel * 10
             target.copy(
                 owner = fleet.owner,
-                units = min(capturedCap.toFloat(), attackPower - target.units),
+                units = attackPower - target.units,
                 capLevel = capturedCapLevel
             )
         } else {

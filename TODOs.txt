@@ -11,5 +11,3 @@ the number showing the level of the node should be on the bottom on top of the n
 when upgrading a node there should be an animation like a circle filling up.
 
 the pricing for upgrading a node does not make sense and is not round numbers
-
-nodes should be able to fill up beyond the limit when troops are sent from another node. currently when i conquer a node i see it does not go over the limit.

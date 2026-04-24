@@ -36,8 +36,8 @@
 - Base capacity is tiered by `capLevel`, with `cap = capLevel * 10`; each upgrade raises both by one tier until `maxLevel`, after which the selected-base upgrade pill is hidden.
 - Funds accrue for each non-neutral owner at a slower passive rate of `0.6 + 0.25 * owned bases` per second before campaign cash-rate multipliers apply, which keeps early cap upgrades from snowballing too quickly.
 - Level completion awards between 1 and 3 stars based on authored completion-time thresholds stored in the level JSON; replaying a level improves the stored record only when the new run earns more stars.
-- Capturing a base reduces its `capLevel` by two tiers, but never below 1; the surviving garrison is clamped to the new captured cap.
-- Friendly reinforcements are also clamped to the destination base's current cap instead of temporarily overfilling it.
+- Capturing a base reduces its `capLevel` by two tiers, but never below 1; surviving attackers keep their full post-combat count even if that temporarily exceeds the new captured cap.
+- Friendly reinforcements also keep their full arrival count even if that temporarily pushes the destination base above its current cap; normal production then decays any over-cap garrison back toward cap over time.
 - Tapping player-owned bases only changes selection state, empty-space taps clear the current selection, and stale-selection cleanup paths clear invalid selection without replacing the current HUD message; the message banner is reserved for actionable feedback such as launch, upgrade, pause, win, loss, and error states.
 - The in-game HUD does not expose per-AI money totals, level title text, or a remaining-rivals chip; it keeps only the player-funds readout and pause action on screen so the playfield stays less cluttered.
 - Each configured AI controller evaluates nearby non-owned bases every five seconds and attacks when it has a large enough unit advantage; otherwise it buys cap upgrades.
