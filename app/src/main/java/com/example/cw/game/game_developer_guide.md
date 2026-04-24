@@ -7,7 +7,7 @@
 ## Files
 
 - `GameApp.kt`: Top-level Compose entry for the game feature. Owns screen navigation, campaign state, active match state, packaged level loading, and the frame-timed simulation loop.
-- `GameScreens.kt`: Menu, asset-backed level selection, upgrade screen, in-game HUD, pause overlay, level-end overlay, and the upgrade button anchored to the selected base.
+- `GameScreens.kt`: Menu, asset-backed level selection, upgrade screen, in-game HUD, pause overlay, level-end overlay, and the selected-base upgrade affordance that only appears for player-owned bases still below `maxLevel`.
 - `GameCanvas.kt`: Custom canvas rendering for the starfield, obstacles, bases, fleet trails, and fleets.
 - `GameLogic.kt`: Input handling, fleet launching, base upgrades, frame stepping, AI decisions, ship production, combat resolution, arrival handling, and selection cleanup when ownership changes.
 - `GameWorld.kt`: Match creation from authored level definitions, route building around obstacles, coordinate conversion, and shared world geometry helpers.
@@ -30,7 +30,7 @@
 - Player sends launch `floor(current units * 0.5)` ships from a base.
 - Fast bases launch fleets at higher movement speed.
 - Bases produce units over time until they hit cap, and over-cap bases decay back toward cap.
-- Base capacity is tiered by `capLevel`, with `cap = capLevel * 10`; each upgrade raises both by one tier.
+- Base capacity is tiered by `capLevel`, with `cap = capLevel * 10`; each upgrade raises both by one tier until `maxLevel`, after which the selected-base upgrade pill is hidden.
 - Each configured AI controller evaluates nearby non-owned bases every five seconds and attacks when it has a large enough unit advantage; otherwise it buys cap upgrades.
 - Route generation inserts detour waypoints when a direct line intersects an obstacle buffer.
 

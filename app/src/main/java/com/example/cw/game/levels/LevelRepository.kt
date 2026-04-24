@@ -1,6 +1,7 @@
 package com.example.cw.game.levels
 
 import android.content.res.AssetManager
+import android.util.Log
 import com.example.cw.game.CampaignState
 
 internal interface LevelRepository {
@@ -13,14 +14,19 @@ internal class AssetLevelRepository(
     private val levelsDirectory: String = "levels"
 ) : LevelRepository {
     override fun listLevels(): List<LevelSummary> {
-        return levelFileNames().mapNotNull { fileName ->
-            runCatching { loadLevelFile(fileName).toSummary() }.getOrNull()
-        }.let(::sortLevelSummaries)
+        return loadEntriesIgnoringFailures(
+            names = levelFileNames(),
+            onFailure = ::reportLoadFailure,
+            load = { fileName -> loadLevelFile(fileName).toSummary() }
+        ).let(::sortLevelSummaries)
     }
 
     override fun loadLevel(levelId: Int): LevelDefinition {
-        return levelFileNames().asSequence()
-            .mapNotNull { runCatching { loadLevelFile(it) }.getOrNull() }
+        return loadEntriesIgnoringFailures(
+            names = levelFileNames(),
+            onFailure = ::reportLoadFailure,
+            load = ::loadLevelFile
+        ).asSequence()
             .firstOrNull { it.levelId == levelId }
             ?: throw LevelParseException("Level $levelId was not found in assets/$levelsDirectory")
     }
@@ -36,6 +42,10 @@ internal class AssetLevelRepository(
         val path = "$levelsDirectory/$fileName"
         val json = assetManager.open(path).bufferedReader().use { it.readText() }
         return LevelJson.decode(json)
+    }
+
+    private fun reportLoadFailure(fileName: String, error: Throwable) {
+        Log.e("LevelRepository", "Failed to load $fileName from assets/$levelsDirectory", error)
     }
 }
 
@@ -56,4 +66,16 @@ internal fun sortLevelSummaries(levels: List<LevelSummary>): List<LevelSummary> 
 
 internal fun isLevelUnlocked(level: LevelSummary, campaign: CampaignState): Boolean {
     return level.unlockAfterLevelId == null || level.unlockAfterLevelId in campaign.completedLevels
+}
+
+internal fun <T> loadEntriesIgnoringFailures(
+    names: List<String>,
+    onFailure: (String, Throwable) -> Unit,
+    load: (String) -> T
+): List<T> {
+    return names.mapNotNull { name ->
+        runCatching { load(name) }
+            .onFailure { onFailure(name, it) }
+            .getOrNull()
+    }
 }

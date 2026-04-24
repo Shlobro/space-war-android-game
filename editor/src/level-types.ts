@@ -1,6 +1,5 @@
 export const WORLD_WIDTH = 1000;
 export const WORLD_HEIGHT = 1600;
-export const CAPACITY_PER_LEVEL = 10;
 export const BASE_RADIUS_MIN = 36;
 export const RADIUS_PER_LEVEL = 6;
 export const DEFAULT_CAP_LEVEL = 4;
@@ -69,10 +68,6 @@ export const BASE_TYPES: BaseType[] = [
   "BATTERY"
 ];
 export const AI_TYPES: AiType[] = ["STANDARD"];
-
-export function capacityForLevel(capLevel: number): number {
-  return sanitizeCapLevel(capLevel) * CAPACITY_PER_LEVEL;
-}
 
 export function radiusForLevel(capLevel: number): number {
   return BASE_RADIUS_MIN + (sanitizeCapLevel(capLevel) - 1) * RADIUS_PER_LEVEL;

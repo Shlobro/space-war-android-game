@@ -6,7 +6,7 @@
 
 ## Files
 
-- `LevelRepositoryTest.kt`: Verifies JSON parsing, validation failures, catalog sorting, unlock rules, and mapping from level definitions into runtime match state.
+- `LevelRepositoryTest.kt`: Verifies JSON parsing, validation failures, repository failure reporting for malformed files, catalog sorting, unlock rules, and mapping from level definitions into runtime match state.
 
 ## Working In This Folder
 

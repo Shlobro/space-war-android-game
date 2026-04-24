@@ -6,7 +6,7 @@
 
 ## Files
 
-- `GameLogicTest.kt`: Verifies fleet launch math, player base upgrades, obstacle-aware route generation, selection cleanup after ownership changes during simulation, and the five-second enemy AI think cadence against asset-backed match models.
+- `GameLogicTest.kt`: Verifies fleet launch math, player base upgrades, obstacle-aware route generation, selected-base upgrade visibility at `maxLevel`, selection cleanup after ownership changes during simulation, and the five-second enemy AI think cadence against asset-backed match models. It uses a shared `matchState(...)` fixture helper so state-shape changes stay localized.
 
 ## Subfolders
 

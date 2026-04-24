@@ -67,6 +67,9 @@ internal object LevelJson {
     }
 
     private fun validateLevel(level: LevelDefinition) {
+        // Runtime still accepts schema v1 as a migration bridge for older authored files.
+        // Those files may include legacy cap/radius fields, but the runtime ignores them and
+        // always derives cap/radius from capLevel while defaulting missing maxLevel values.
         if (level.schemaVersion != LEVEL_SCHEMA_VERSION && level.schemaVersion != 1) {
             throw LevelParseException(
                 "Unsupported schemaVersion ${level.schemaVersion}; expected $LEVEL_SCHEMA_VERSION"

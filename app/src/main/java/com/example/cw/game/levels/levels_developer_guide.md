@@ -24,10 +24,11 @@ Owner names, AI controller types, and base type names map directly to the existi
 `capLevel` sets the base's starting capacity tier (cap = capLevel × 10) and its initial visual size (radius = 36 + (capLevel − 1) × 6).
 `maxLevel` caps how high the base can be upgraded in-game; `capLevel` must not exceed `maxLevel`.
 Both `cap` and `radius` are derived at runtime and must not be authored in the JSON.
-Schema v1 files (which contain `cap` and `radius`) are accepted and auto-upgraded to v2 semantics on load.
+Schema v1 files are still accepted as a migration bridge. The runtime ignores authored `cap` and `radius`, derives both values from `capLevel`, and defaults missing `maxLevel` to `DEFAULT_MAX_LEVEL`.
 
 ## Working In This Package
 
 - Keep authored content validation here so the asset loader, tests, and editor-facing rules stay aligned.
 - Add new authored entities here before wiring them into gameplay or editor UI.
 - When this shared schema changes, update both the Android runtime and the level editor together.
+- The runtime and editor both derive `cap` and `radius` from `capLevel`; keep the formulas and constants synchronized across Kotlin and TypeScript.

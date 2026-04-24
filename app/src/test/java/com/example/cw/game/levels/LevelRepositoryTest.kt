@@ -86,7 +86,7 @@ class LevelRepositoryTest {
     @Test
     fun createMatch_preservesLevelValues() {
         val level = LevelDefinition(
-            schemaVersion = 1,
+            schemaVersion = 2,
             levelId = 9,
             name = "Test Level",
             description = "Desc",
@@ -112,6 +112,25 @@ class LevelRepositoryTest {
         assertEquals(BASE_RADIUS_MIN + (6 - 1) * RADIUS_PER_LEVEL, match.bases.first().radius)
         assertEquals(BaseType.FAST, match.bases.first().type)
         assertEquals(90f, match.obstacles.single().radius)
+    }
+
+    @Test
+    fun loadEntriesIgnoringFailures_reportsAndSkipsFailures() {
+        val failures = mutableListOf<String>()
+
+        val loaded = loadEntriesIgnoringFailures(
+            names = listOf("good.json", "broken.json", "other.json"),
+            onFailure = { name, _ -> failures += name },
+            load = { name ->
+                when (name) {
+                    "broken.json" -> throw LevelParseException("Broken file")
+                    else -> name.removeSuffix(".json")
+                }
+            }
+        )
+
+        assertEquals(listOf("good", "other"), loaded)
+        assertEquals(listOf("broken.json"), failures)
     }
 
     private fun validJson(levelId: Int, sortOrder: Int): String {

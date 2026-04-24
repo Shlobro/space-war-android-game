@@ -315,9 +315,8 @@ internal fun UpgradeNodeButton(
     onUpgrade: (Int) -> Unit
 ) {
     if (viewportSize == IntSize.Zero) return
-    if (state.selectedBaseIds.size != 1) return
 
-    val base = state.bases.firstOrNull { it.id == state.selectedBaseIds.first() && it.owner == Owner.PLAYER } ?: return
+    val base = selectedUpgradablePlayerBase(state) ?: return
     val canvasSize = Size(viewportSize.width.toFloat(), viewportSize.height.toFloat())
     val center = worldToScreen(base.position, canvasSize, state.worldBounds)
     val radius = base.radius * scale(canvasSize, state.worldBounds)
@@ -357,4 +356,12 @@ internal fun UpgradeNodeButton(
             )
         }
     }
+}
+
+internal fun selectedUpgradablePlayerBase(state: MatchState): BaseState? {
+    if (state.selectedBaseIds.size != 1) return null
+
+    val selectedBaseId = state.selectedBaseIds.first()
+    val base = state.bases.firstOrNull { it.id == selectedBaseId && it.owner == Owner.PLAYER } ?: return null
+    return base.takeIf { it.capLevel < it.maxLevel }
 }

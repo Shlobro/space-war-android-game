@@ -20,6 +20,6 @@
 - Keep placement-time defaults in `App.tsx` aligned with the right-sidebar controls so users can choose what gets created before they click the map without adding extra top-row UI.
 - Keep selected-node actions in the right sidebar, including destructive actions like deleting the currently selected base or obstacle.
 - Route file I/O through `level-api.ts` so the editor stays tied to the packaged levels folder and can reopen existing levels without browser file-picker state.
-- Keep capacity fields synchronized so `capLevel` defines `cap` directly, using 10 units per level.
+- Keep the derived level formulas synchronized with the Android runtime: `cap = capLevel * 10` and `radius = 36 + (capLevel - 1) * 6`.
 - Treat the numeric unit labels as visual overlays only; pointer handling should stay on the draggable node shapes underneath.
 - Keep owner choices, AI controller types, and node/base types aligned with the Android runtime schema. When adding a new AI owner, AI type, node type, or authored field, update both the editor and the Android app in the same change.

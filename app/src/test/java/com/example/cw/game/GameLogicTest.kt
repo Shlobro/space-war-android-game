@@ -7,6 +7,7 @@ import com.example.cw.game.levels.LevelDefinition
 import com.example.cw.game.levels.LevelObstacleDefinition
 import com.example.cw.game.levels.WorldBounds
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -33,21 +34,7 @@ class GameLogicTest {
             units = 10f,
             capLevel = 1
         )
-        val state = MatchState(
-            worldBounds = WorldBounds(),
-            bases = listOf(base),
-            fleets = emptyList(),
-            obstacles = emptyList(),
-            playerMoney = 40f,
-            aiStates = emptyMap(),
-            nextFleetId = 1,
-            selectedBaseIds = emptySet(),
-            message = "",
-            status = MatchStatus.RUNNING,
-            levelId = 1,
-            levelName = "Test",
-            isPaused = false
-        )
+        val state = matchState(bases = listOf(base), playerMoney = 40f)
 
         val updated = upgradeBase(state, baseId = 1)
 
@@ -105,20 +92,12 @@ class GameLogicTest {
             fleetDamageMultiplier = 1f,
             type = BaseType.ASSAULT
         )
-        val state = MatchState(
-            worldBounds = WorldBounds(),
+        val state = matchState(
             bases = listOf(playerBase, enemyBase),
             fleets = listOf(arrivingEnemyFleet),
-            obstacles = emptyList(),
-            playerMoney = 0f,
             aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 1f)),
             nextFleetId = 2,
-            selectedBaseIds = setOf(playerBase.id),
-            message = "",
-            status = MatchStatus.RUNNING,
-            levelId = 1,
-            levelName = "Test",
-            isPaused = false
+            selectedBaseIds = setOf(playerBase.id)
         )
 
         val updated = stepMatch(state, dt = 0f, cashIncomeMultiplier = 1f)
@@ -145,8 +124,7 @@ class GameLogicTest {
             units = 4f,
             capLevel = 2
         )
-        val state = MatchState(
-            worldBounds = WorldBounds(),
+        val state = matchState(
             bases = listOf(
                 BaseState(
                     id = 1,
@@ -159,19 +137,9 @@ class GameLogicTest {
                 enemyBase,
                 targetBase
             ),
-            fleets = emptyList(),
-            obstacles = emptyList(),
-            playerMoney = 0f,
             aiStates = mapOf(
                 Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, ENEMY_AI_THINK_INTERVAL_SECONDS)
             ),
-            nextFleetId = 1,
-            selectedBaseIds = emptySet(),
-            message = "",
-            status = MatchStatus.RUNNING,
-            levelId = 1,
-            levelName = "Test",
-            isPaused = false
         )
 
         val beforeThink = stepMatch(state, dt = 4f, cashIncomeMultiplier = 1f)
@@ -189,9 +157,53 @@ class GameLogicTest {
         assertEquals(10f, afterThink.bases.first { it.id == 2 }.units)
     }
 
+    @Test
+    fun selectedUpgradablePlayerBase_hidesUpgradeButtonAtMaxLevel() {
+        val maxedBase = BaseState(
+            id = 1,
+            position = Offset(100f, 100f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 4,
+            maxLevel = 4
+        )
+        val state = matchState(
+            bases = listOf(maxedBase),
+            playerMoney = 100f,
+            selectedBaseIds = setOf(maxedBase.id)
+        )
+
+        val upgradeBase = selectedUpgradablePlayerBase(state)
+
+        assertNull(upgradeBase)
+    }
+
+    @Test
+    fun selectedUpgradablePlayerBase_returnsSelectedPlayerBaseBelowMaxLevel() {
+        val upgradableBase = BaseState(
+            id = 1,
+            position = Offset(100f, 100f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 3,
+            maxLevel = 4
+        )
+        val state = matchState(
+            bases = listOf(upgradableBase),
+            playerMoney = 100f,
+            selectedBaseIds = setOf(upgradableBase.id)
+        )
+
+        val upgradeBase = selectedUpgradablePlayerBase(state)
+
+        assertEquals(upgradableBase, upgradeBase)
+    }
+
     private fun sampleLevel(): LevelDefinition {
         return LevelDefinition(
-            schemaVersion = 1,
+            schemaVersion = 2,
             levelId = 1,
             name = "Sample",
             description = "Sample",
@@ -206,6 +218,32 @@ class GameLogicTest {
                 LevelBaseDefinition(3, 260f, 1100f, Owner.NEUTRAL, BaseType.COMMAND, 16f, 2)
             ),
             obstacles = listOf(LevelObstacleDefinition(500f, 520f, 95f))
+        )
+    }
+
+    private fun matchState(
+        bases: List<BaseState>,
+        fleets: List<FleetState> = emptyList(),
+        playerMoney: Float = 0f,
+        aiStates: Map<Owner, AiRuntimeState> = emptyMap(),
+        nextFleetId: Int = 1,
+        selectedBaseIds: Set<Int> = emptySet(),
+        message: String = ""
+    ): MatchState {
+        return MatchState(
+            worldBounds = WorldBounds(),
+            bases = bases,
+            fleets = fleets,
+            obstacles = emptyList(),
+            playerMoney = playerMoney,
+            aiStates = aiStates,
+            nextFleetId = nextFleetId,
+            selectedBaseIds = selectedBaseIds,
+            message = message,
+            status = MatchStatus.RUNNING,
+            levelId = 1,
+            levelName = "Test",
+            isPaused = false
         )
     }
 }
