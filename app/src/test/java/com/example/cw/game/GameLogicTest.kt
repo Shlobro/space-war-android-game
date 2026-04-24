@@ -349,6 +349,71 @@ class GameLogicTest {
         assertTrue(layout.levelOffsetY < smallRenderedRadius)
     }
 
+    @Test
+    fun upgradeNodeButtonOffset_clampsOverlayInsideTopRightEdge() {
+        val offset = upgradeNodeButtonOffset(
+            center = Offset(982f, 20f),
+            radius = 24f,
+            viewportSize = IntSize(1000, 1000),
+            buttonSize = IntSize(96, 40),
+            baseMarginPx = 8,
+            horizontalGapPx = 6,
+            verticalGapPx = 4
+        )
+
+        assertEquals(896, offset.x)
+        assertEquals(8, offset.y)
+    }
+
+    @Test
+    fun upgradeNodeButtonOffset_keepsPreferredPositionWhenThereIsRoom() {
+        val offset = upgradeNodeButtonOffset(
+            center = Offset(300f, 500f),
+            radius = 24f,
+            viewportSize = IntSize(1000, 1000),
+            buttonSize = IntSize(96, 40),
+            baseMarginPx = 8,
+            horizontalGapPx = 6,
+            verticalGapPx = 4
+        )
+
+        assertEquals(330, offset.x)
+        assertEquals(472, offset.y)
+    }
+
+    @Test
+    fun upgradeNodeButtonOffset_handlesSmallViewportByPinningToVisibleBounds() {
+        val offset = upgradeNodeButtonOffset(
+            center = Offset(20f, 20f),
+            radius = 16f,
+            viewportSize = IntSize(80, 70),
+            buttonSize = IntSize(96, 40),
+            baseMarginPx = 8,
+            horizontalGapPx = 6,
+            verticalGapPx = 4
+        )
+
+        assertEquals(8, offset.x)
+        assertEquals(8, offset.y)
+    }
+
+    @Test
+    fun upgradeNodeButtonOffset_respectsSafeDrawingInsets() {
+        val offset = upgradeNodeButtonOffset(
+            center = Offset(982f, 20f),
+            radius = 24f,
+            viewportSize = IntSize(1000, 1000),
+            buttonSize = IntSize(96, 40),
+            baseMarginPx = 8,
+            horizontalGapPx = 6,
+            verticalGapPx = 4,
+            edgeInsets = EdgeInsets(top = 32, right = 24, bottom = 48)
+        )
+
+        assertEquals(872, offset.x)
+        assertEquals(40, offset.y)
+    }
+
     private fun sampleLevel(): LevelDefinition {
         return LevelDefinition(
             schemaVersion = 2,

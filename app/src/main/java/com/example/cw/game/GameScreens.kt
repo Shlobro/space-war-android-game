@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,12 +24,19 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -321,15 +331,36 @@ internal fun UpgradeNodeButton(
     val center = worldToScreen(base.position, canvasSize, state.worldBounds)
     val radius = base.radius * scale(canvasSize, state.worldBounds)
     val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
     val cost = upgradeCost(base)
     val canAfford = state.playerMoney >= cost
-    val x = center.x + radius + with(density) { 6.dp.toPx() }
-    val y = center.y - radius - with(density) { 4.dp.toPx() }
+    var measuredButtonSize by remember { mutableStateOf(IntSize.Zero) }
+    val fallbackButtonSize = with(density) { IntSize(88.dp.roundToPx(), 40.dp.roundToPx()) }
+    val buttonSize = if (measuredButtonSize == IntSize.Zero) fallbackButtonSize else measuredButtonSize
+    val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
+    val safeAreaInsets = with(density) {
+        EdgeInsets(
+            left = safeDrawingPadding.calculateLeftPadding(layoutDirection).roundToPx(),
+            top = safeDrawingPadding.calculateTopPadding().roundToPx(),
+            right = safeDrawingPadding.calculateRightPadding(layoutDirection).roundToPx(),
+            bottom = safeDrawingPadding.calculateBottomPadding().roundToPx()
+        )
+    }
+    val buttonOffset = upgradeNodeButtonOffset(
+        center = center,
+        radius = radius,
+        viewportSize = viewportSize,
+        buttonSize = buttonSize,
+        baseMarginPx = with(density) { 8.dp.roundToPx() },
+        horizontalGapPx = with(density) { 6.dp.roundToPx() },
+        verticalGapPx = with(density) { 4.dp.roundToPx() },
+        edgeInsets = safeAreaInsets
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
-                .offset { IntOffset(x.toInt(), y.toInt()) }
+                .offset { buttonOffset }
                 .zIndex(2f)
                 .widthIn(min = 64.dp)
                 .heightIn(min = 40.dp)
@@ -338,6 +369,7 @@ internal fun UpgradeNodeButton(
                     shape = RoundedCornerShape(50)
                 )
                 .clickable { onUpgrade(base.id) }
+                .onSizeChanged { measuredButtonSize = it }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -356,6 +388,36 @@ internal fun UpgradeNodeButton(
             )
         }
     }
+}
+
+internal data class EdgeInsets(
+    val left: Int = 0,
+    val top: Int = 0,
+    val right: Int = 0,
+    val bottom: Int = 0
+)
+
+internal fun upgradeNodeButtonOffset(
+    center: Offset,
+    radius: Float,
+    viewportSize: IntSize,
+    buttonSize: IntSize,
+    baseMarginPx: Int,
+    horizontalGapPx: Int,
+    verticalGapPx: Int,
+    edgeInsets: EdgeInsets = EdgeInsets()
+): IntOffset {
+    val minX = (edgeInsets.left + baseMarginPx).toFloat()
+    val minY = (edgeInsets.top + baseMarginPx).toFloat()
+    val maxX = (viewportSize.width - buttonSize.width - edgeInsets.right - baseMarginPx).toFloat()
+    val maxY = (viewportSize.height - buttonSize.height - edgeInsets.bottom - baseMarginPx).toFloat()
+    val preferredX = center.x + radius + horizontalGapPx
+    val preferredY = center.y - radius - verticalGapPx
+
+    return IntOffset(
+        x = preferredX.coerceIn(minX, maxX.coerceAtLeast(minX)).toInt(),
+        y = preferredY.coerceIn(minY, maxY.coerceAtLeast(minY)).toInt()
+    )
 }
 
 internal fun selectedUpgradablePlayerBase(state: MatchState): BaseState? {
