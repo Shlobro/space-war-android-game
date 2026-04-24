@@ -1,3 +1,15 @@
 currently obsticles effect pathing in a weird way. but the units are definately not avoiding the visual obsacles. 
 
 stars should become spendable currency outside levels, not just a tracked total.
+
+We need to make an improvement for the AI. if it is a node is full and it is at max level then it attacks
+
+inside a level make the funds look better. like an icon or something. make it yellow. we do not need the level title like level one inside a level. get rid of it. inside a level we don't need the little "hlepful" text like "select your bases first" get rid of it.
+
+the number showing the level of the node should be on the bottom on top of the node circle not iside the node.
+
+when upgrading a node there should be an animation like a circle filling up.
+
+the pricing for upgrading a node does not make sense and is not round numbers
+
+nodes should be able to fill up beyond the limit when troops are sent from another node. currently when i conquer a node i see it does not go over the limit.

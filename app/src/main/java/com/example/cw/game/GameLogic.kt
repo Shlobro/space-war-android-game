@@ -10,6 +10,7 @@ import kotlin.math.min
 internal const val ENEMY_AI_THINK_INTERVAL_SECONDS = 5f
 internal const val BASE_FUNDS_PER_SECOND = 0.6f
 internal const val PER_OWNED_BASE_FUNDS_PER_SECOND = 0.25f
+private const val TAP_SLOP_PX = 56f
 
 internal fun onScreenTap(
     state: MatchState,
@@ -21,8 +22,12 @@ internal fun onScreenTap(
     val tappedBase = state.bases.firstOrNull {
         val screenCenter = worldToScreen(it.position, canvasSize, state.worldBounds)
         val screenRadius = it.radius * scale(canvasSize, state.worldBounds)
-        distance(screenCenter, screenTap) <= screenRadius + 56f
-    } ?: return state.copy(message = "No base hit")
+        distance(screenCenter, screenTap) <= screenRadius + TAP_SLOP_PX
+    } ?: return if (state.selectedBaseIds.isEmpty()) {
+        state
+    } else {
+        state.copy(selectedBaseIds = emptySet())
+    }
 
     if (tappedBase.owner == Owner.PLAYER) {
         if (isDoubleTap && state.selectedBaseIds.isNotEmpty()) {

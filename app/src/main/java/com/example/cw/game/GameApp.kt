@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
@@ -24,6 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import com.example.cw.game.levels.AssetLevelRepository
 import com.example.cw.game.levels.LevelRepository
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun GameApp() {
@@ -43,8 +46,12 @@ fun GameApp() {
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     var levelLoadError by remember { mutableStateOf(levelLoadResult.exceptionOrNull()?.message) }
 
-    LaunchedEffect(campaign) {
-        saveCampaignState(campaignPreferences, campaign)
+    LaunchedEffect(Unit) {
+        snapshotFlow { campaign }
+            .distinctUntilChanged()
+            .collectLatest { updatedCampaign ->
+                saveCampaignState(campaignPreferences, updatedCampaign)
+            }
     }
 
     LaunchedEffect(appScreen, matchState?.status, matchState?.isPaused, campaign.cashRateLevel) {
@@ -176,6 +183,18 @@ fun GameApp() {
                         if (activeMatch.isPaused && activeMatch.status == MatchStatus.RUNNING) {
                             PauseOverlay(
                                 onResume = { matchState = activeMatch.copy(isPaused = false) },
+                                onRestart = {
+                                    restartLevel(levelRepository, activeMatch.levelId)
+                                        .onSuccess { restartedMatch ->
+                                            levelLoadError = null
+                                            matchState = restartedMatch
+                                        }
+                                        .onFailure { error ->
+                                            levelLoadError = error.message ?: "Failed to restart level ${activeMatch.levelId}."
+                                            matchState = null
+                                            appScreen = AppScreen.LEVELS
+                                        }
+                                },
                                 onQuit = {
                                     matchState = null
                                     appScreen = AppScreen.LEVELS
@@ -200,6 +219,10 @@ fun GameApp() {
 }
 
 internal fun togglePause(state: MatchState): MatchState = state.copy(isPaused = !state.isPaused)
+
+private fun restartLevel(levelRepository: LevelRepository, levelId: Int): Result<MatchState> {
+    return runCatching { createMatch(levelRepository.loadLevel(levelId)) }
+}
 
 internal data class CampaignProgressUpdate(
     val campaign: CampaignState,

@@ -1,62 +1,37 @@
 package com.example.cw.game
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import com.example.cw.game.levels.LevelSummary
 import com.example.cw.game.levels.isLevelUnlocked
-
-internal const val UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP = 104
-internal const val UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP = 40
-
-internal data class InGameHudSummary(
-    val levelName: String,
-    val fundsLabel: String,
-    val rivalsLabel: String
-)
 
 @Composable
 internal fun HomeScreen(
@@ -64,35 +39,68 @@ internal fun HomeScreen(
     onLevels: () -> Unit,
     onUpgrades: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)),
-            shape = RoundedCornerShape(28.dp)
+    MenuBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Text(
+                text = "CELL WARS",
+                color = AccentCyan,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 6.sp,
+                fontFamily = FontFamily.Monospace
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "GALACTIC CAMPAIGN",
+                color = TextSecond,
+                fontSize = 13.sp,
+                letterSpacing = 4.sp
+            )
+
+            Spacer(Modifier.height(40.dp))
+            GlowDivider()
+            Spacer(Modifier.height(32.dp))
+
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(BgCard)
+                    .border(1.dp, BorderDim, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Text("★", color = AccentGold, fontSize = 20.sp)
                 Text(
-                    text = "Cell Wars Prototype",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp
+                    "${campaign.totalStars} Stars Collected",
+                    color = TextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
-                Text("Prototype campaign shell", color = Color(0xFFA7C0D8))
-                Text("Stars: ${campaign.totalStars}", color = Color(0xFFF6CB7D), fontWeight = FontWeight.SemiBold)
-                Button(onClick = onLevels, modifier = Modifier.fillMaxWidth()) { Text("Levels") }
-                Button(onClick = onUpgrades, modifier = Modifier.fillMaxWidth()) { Text("Upgrades") }
             }
+
+            Spacer(Modifier.height(40.dp))
+
+            PrimaryButton("CAMPAIGN", onLevels, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(12.dp))
+            GhostButton("UPGRADES", onUpgrades, Modifier.fillMaxWidth())
+
+            Spacer(Modifier.height(48.dp))
+
+            Text(
+                text = "Capture. Expand. Dominate.",
+                color = TextDim,
+                fontSize = 11.sp,
+                letterSpacing = 1.sp
+            )
         }
     }
 }
@@ -105,76 +113,189 @@ internal fun LevelSelectScreen(
     onBack: () -> Unit,
     onPlayLevel: (Int) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Levels", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-            Text(
-                "Back",
-                color = Color(0xFFA7C0D8),
-                modifier = Modifier.pointerInput(Unit) { detectTapGestures(onTap = { onBack() }) }
-            )
-        }
-
-        Text(
-            "Stars: ${campaign.totalStars}",
-            color = Color(0xFFF6CB7D),
-            fontWeight = FontWeight.SemiBold
-        )
-
-        if (loadError != null) {
-            Card(colors = CardDefaults.cardColors(containerColor = Color(0xAA462326)), shape = RoundedCornerShape(24.dp)) {
-                Text(
-                    text = loadError,
-                    color = Color(0xFFFFDDD7),
-                    modifier = Modifier.padding(20.dp)
-                )
-            }
-        }
-
-        if (levels.isEmpty()) {
-            Card(colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)), shape = RoundedCornerShape(24.dp)) {
-                Text(
-                    text = "No packaged levels were found in assets/levels.",
-                    color = Color(0xFFA7C0D8),
-                    modifier = Modifier.padding(20.dp)
-                )
-            }
-        }
-
-        levels.forEach { level ->
-            val unlocked = isLevelUnlocked(level, campaign)
-            val stars = campaign.starsForLevel(level.levelId)
-            Card(colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)), shape = RoundedCornerShape(24.dp)) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(level.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Text(level.description, color = Color(0xFFA7C0D8))
+    MenuBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
                     Text(
-                        text = "Stars: ${formatStars(stars)}",
-                        color = Color(0xFFF6CB7D),
-                        fontWeight = FontWeight.SemiBold
+                        "CAMPAIGN",
+                        color = AccentCyan,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 3.sp,
+                        fontFamily = FontFamily.Monospace
                     )
-                    Text(
-                        text = when {
-                            level.levelId in campaign.completedLevels -> "Completed"
-                            unlocked -> "Unlocked"
-                            else -> "Complete Level ${level.unlockAfterLevelId} to unlock"
-                        },
-                        color = if (level.levelId in campaign.completedLevels) Color(0xFF9BE7AE) else Color(0xFFF6CB7D)
-                    )
-                    Button(
-                        onClick = { onPlayLevel(level.levelId) },
-                        enabled = unlocked
+                    Text("Select Mission", color = TextSecond, fontSize = 12.sp, letterSpacing = 1.sp)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("★", color = AccentGold, fontSize = 16.sp)
+                    Text("${campaign.totalStars}", color = AccentGold, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Spacer(Modifier.width(12.dp))
+                    GhostButton("BACK", onBack)
+                }
+            }
+
+            GlowDivider(Modifier.padding(horizontal = 20.dp))
+            Spacer(Modifier.height(4.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (loadError != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF2A0D0D))
+                            .border(1.dp, AccentRed.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                            .padding(16.dp)
                     ) {
-                        Text("Play")
+                        Text(loadError, color = AccentRed, fontSize = 13.sp)
                     }
                 }
+
+                if (levels.isEmpty() && loadError == null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(BgCard)
+                            .border(1.dp, BorderDim, RoundedCornerShape(10.dp))
+                            .padding(20.dp)
+                    ) {
+                        Text("No missions found in assets/levels.", color = TextSecond, fontSize = 13.sp)
+                    }
+                }
+
+                levels.forEach { level ->
+                    LevelCard(level, campaign, onPlayLevel)
+                }
+
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LevelCard(
+    level: LevelSummary,
+    campaign: CampaignState,
+    onPlay: (Int) -> Unit
+) {
+    val unlocked = isLevelUnlocked(level, campaign)
+    val stars = campaign.starsForLevel(level.levelId)
+    val completed = level.levelId in campaign.completedLevels
+
+    val borderColor = when {
+        completed -> AccentCyan.copy(alpha = 0.35f)
+        unlocked -> BorderGlow
+        else -> BorderDim
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            if (completed) AccentCyan else if (unlocked) BorderGlow else BorderDim,
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = level.name.uppercase(),
+                        color = if (unlocked) TextPrimary else TextSecond,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = level.description,
+                        color = TextSecond,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                StarRow(stars)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                when {
+                    completed -> Text(
+                        "COMPLETED",
+                        color = AccentGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+
+                    unlocked -> Text(
+                        "AVAILABLE",
+                        color = AccentCyan,
+                        fontSize = 11.sp,
+                        letterSpacing = 1.sp
+                    )
+
+                    else -> Text(
+                        "LOCKED - Complete Mission ${level.unlockAfterLevelId}",
+                        color = TextDim,
+                        fontSize = 11.sp,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+
+                PrimaryButton(
+                    label = if (completed) "REPLAY" else "DEPLOY",
+                    onClick = { onPlay(level.levelId) },
+                    enabled = unlocked
+                )
             }
         }
     }
@@ -186,99 +307,76 @@ internal fun UpgradesScreen(
     onBack: () -> Unit,
     onUpgradeCashRate: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Upgrades", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-            Text(
-                "Back",
-                color = Color(0xFFA7C0D8),
-                modifier = Modifier.pointerInput(Unit) { detectTapGestures(onTap = { onBack() }) }
-            )
-        }
-        Card(colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)), shape = RoundedCornerShape(24.dp)) {
-            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Upgrade Points: ${campaign.upgradePoints}", color = Color.White, fontWeight = FontWeight.Bold)
-                Text("Stars: ${campaign.totalStars}", color = Color(0xFFF6CB7D), fontWeight = FontWeight.SemiBold)
-                Text("Cash Flow Level: ${campaign.cashRateLevel}", color = Color(0xFFA7C0D8))
-                Text(
-                    "Increases how fast funds rise during a level. More upgrades will be added later.",
-                    color = Color(0xFFA7C0D8)
-                )
-                Button(
-                    onClick = onUpgradeCashRate,
-                    enabled = campaign.upgradePoints > 0
-                ) {
-                    Text("Upgrade Cash Flow")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun InGameHud(
-    state: MatchState,
-    onOpenMenu: () -> Unit
-) {
-    val hudSummary = inGameHudSummary(state)
-
-    Column(
-        modifier = Modifier
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth()
+    MenuBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                HudChip(
-                    label = "Level",
-                    content = hudSummary.levelName,
-                    modifier = Modifier.weight(1f)
-                )
-                HudChip(
-                    label = "Funds",
-                    content = hudSummary.fundsLabel
-                )
-                HudChip(
-                    label = "Rivals",
-                    content = hudSummary.rivalsLabel
-                )
+                Column {
+                    Text(
+                        "UPGRADES",
+                        color = AccentCyan,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 3.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Text("Fleet Enhancements", color = TextSecond, fontSize = 12.sp, letterSpacing = 1.sp)
+                }
+                GhostButton("BACK", onBack)
             }
 
-            HudActionChip(
-                label = if (state.isPaused) "Resume" else "Pause",
-                onTap = onOpenMenu
-            )
-        }
+            GlowDivider(Modifier.padding(horizontal = 20.dp))
 
-        if (state.message.isNotBlank()) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xC0182735)),
-                shape = RoundedCornerShape(16.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    StatPill("POINTS", "${campaign.upgradePoints}", AccentGold)
+                    StatPill("STARS", "${campaign.totalStars} ★", AccentGold)
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                UpgradeCard(
+                    title = "CASH FLOW",
+                    subtitle = "Economy Upgrade",
+                    description = "Increases the rate at which funds accumulate during a mission. Each level adds +25% income speed.",
+                    currentLevel = campaign.cashRateLevel,
+                    cost = 1,
+                    canAfford = campaign.upgradePoints > 0,
+                    accentColor = AccentGold,
+                    onUpgrade = onUpgradeCashRate
+                )
+
+                UpgradePlaceholderCard("FLEET SPEED", "Movement Upgrade", "Increases ship travel velocity between nodes.")
+                UpgradePlaceholderCard("ASSAULT PROTOCOL", "Combat Upgrade", "Boosts attack strength of Assault-type bases.")
+                UpgradePlaceholderCard("RELAY NETWORK", "Logistics Upgrade", "Extends the range bonus of Relay-type bases.")
+
+                Spacer(Modifier.height(8.dp))
+
                 Text(
-                    text = state.message,
-                    color = Color(0xFFEAF4FF),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    fontSize = 12.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    "Upgrade points are earned by completing missions.",
+                    color = TextDim,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -286,289 +384,120 @@ internal fun InGameHud(
 }
 
 @Composable
-private fun HudChip(
-    label: String,
-    content: String,
-    modifier: Modifier = Modifier
+private fun UpgradeCard(
+    title: String,
+    subtitle: String,
+    description: String,
+    currentLevel: Int,
+    cost: Int,
+    canAfford: Boolean,
+    accentColor: Color,
+    onUpgrade: () -> Unit
 ) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)),
-        shape = RoundedCornerShape(18.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = label,
-                color = Color(0xFFA7C0D8),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = content,
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun HudActionChip(
-    label: String,
-    onTap: () -> Unit
-) {
-    Card(
-        onClick = onTap,
-        colors = CardDefaults.cardColors(containerColor = Color(0xCCF6CB7D)),
-        shape = RoundedCornerShape(18.dp),
+    Box(
         modifier = Modifier
-            .sizeIn(minWidth = 74.dp, minHeight = 48.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .border(1.dp, accentColor.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
     ) {
         Box(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                color = Color(0xFF102132),
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp
-            )
-        }
-    }
-}
-
-@Composable
-internal fun PauseOverlay(
-    onResume: () -> Unit,
-    onQuit: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0x88101822)),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(colors = CardDefaults.cardColors(containerColor = Color(0xF0182735)), shape = RoundedCornerShape(24.dp)) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Paused", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Button(onClick = onResume, modifier = Modifier.fillMaxWidth()) { Text("Resume") }
-                Button(onClick = onQuit, modifier = Modifier.fillMaxWidth()) { Text("Quit Level") }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun LevelEndOverlay(
-    state: MatchState,
-    onLevels: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0x88101822)),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(colors = CardDefaults.cardColors(containerColor = Color(0xF0182735)), shape = RoundedCornerShape(24.dp)) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    if (state.status == MatchStatus.PLAYER_WON) "Level Complete" else "Level Failed",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(state.levelName, color = Color(0xFFA7C0D8))
-                if (state.status == MatchStatus.PLAYER_WON) {
-                    Text(
-                        "Time: ${formatCompletionTime(state.elapsedSeconds)}",
-                        color = Color(0xFFA7C0D8)
-                    )
-                    Text(
-                        "Stars Earned: ${formatStars(state.earnedStars)}",
-                        color = Color(0xFFF6CB7D),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        "Targets: 2 stars <= ${formatCompletionTime(state.starThresholds.twoStarTimeSeconds.toFloat())}, 3 stars <= ${formatCompletionTime(state.starThresholds.threeStarTimeSeconds.toFloat())}",
-                        color = Color(0xFFA7C0D8)
-                    )
-                    Text(
-                        if (state.earnedUpgradePoint) "You earned 1 upgrade point." else "Level already completed.",
-                        color = Color(0xFFA7C0D8)
-                    )
-                    if (state.improvedBestStars) {
-                        Text("Best star record improved.", color = Color(0xFF9BE7AE))
-                    }
-                }
-                Button(onClick = onLevels, modifier = Modifier.fillMaxWidth()) { Text("Back To Levels") }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun UpgradeNodeButton(
-    state: MatchState,
-    viewportSize: IntSize,
-    onUpgrade: (Int) -> Unit
-) {
-    if (viewportSize == IntSize.Zero) return
-
-    val base = selectedUpgradablePlayerBase(state) ?: return
-    val canvasSize = Size(viewportSize.width.toFloat(), viewportSize.height.toFloat())
-    val center = worldToScreen(base.position, canvasSize, state.worldBounds)
-    val radius = base.radius * scale(canvasSize, state.worldBounds)
-    val density = LocalDensity.current
-    val layoutDirection = LocalLayoutDirection.current
-    val cost = upgradeCost(base)
-    val canAfford = state.playerMoney >= cost
-    var measuredButtonSize by remember { mutableStateOf(IntSize.Zero) }
-    val fallbackButtonSize = with(density) {
-        IntSize(
-            UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP.dp.roundToPx(),
-            UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP.dp.roundToPx()
-        )
-    }
-    val buttonSize = if (measuredButtonSize == IntSize.Zero) fallbackButtonSize else measuredButtonSize
-    val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
-    val safeAreaInsets = with(density) {
-        EdgeInsets(
-            left = safeDrawingPadding.calculateLeftPadding(layoutDirection).roundToPx(),
-            top = safeDrawingPadding.calculateTopPadding().roundToPx(),
-            right = safeDrawingPadding.calculateRightPadding(layoutDirection).roundToPx(),
-            bottom = safeDrawingPadding.calculateBottomPadding().roundToPx()
-        )
-    }
-    val buttonOffset = upgradeNodeButtonOffset(
-        center = center,
-        radius = radius,
-        viewportSize = viewportSize,
-        buttonSize = buttonSize,
-        baseMarginPx = with(density) { 8.dp.roundToPx() },
-        horizontalGapPx = with(density) { 6.dp.roundToPx() },
-        verticalGapPx = with(density) { 4.dp.roundToPx() },
-        edgeInsets = safeAreaInsets
-    )
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Row(
             modifier = Modifier
-                .offset { buttonOffset }
-                .zIndex(2f)
-                .widthIn(min = 64.dp)
-                .heightIn(min = 40.dp)
+                .fillMaxWidth()
+                .height(2.dp)
                 .background(
-                    color = if (canAfford) Color(0xFFF6CB7D) else Color(0xFF6C5A2B),
-                    shape = RoundedCornerShape(50)
+                    Brush.horizontalGradient(
+                        listOf(accentColor.copy(alpha = 0.8f), Color.Transparent)
+                    )
                 )
-                .onSizeChanged { measuredButtonSize = it }
-                .graphicsLayer { alpha = if (measuredButtonSize == IntSize.Zero) 0f else 1f }
-                .clickable(enabled = measuredButtonSize != IntSize.Zero) { onUpgrade(base.id) }
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+        )
+
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = "$",
-                color = Color(0xFF102132),
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Text(
-                text = formatFunds(cost),
-                color = Color(0xFF102132),
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(title, color = accentColor, fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(subtitle, color = TextSecond, fontSize = 11.sp, letterSpacing = 0.5.sp)
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(BgCardAlt)
+                        .border(1.dp, BorderDim, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("LVL $currentLevel", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Text(description, color = TextSecond, fontSize = 13.sp, lineHeight = 18.sp)
+
+            GlowDivider()
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("COST", color = TextDim, fontSize = 11.sp, letterSpacing = 1.sp)
+                    Text(
+                        "$cost PT",
+                        color = if (canAfford) AccentGold else TextDim,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                PrimaryButton(
+                    label = "UPGRADE",
+                    onClick = onUpgrade,
+                    enabled = canAfford
+                )
+            }
         }
     }
 }
 
-internal data class EdgeInsets(
-    val left: Int = 0,
-    val top: Int = 0,
-    val right: Int = 0,
-    val bottom: Int = 0
-)
-
-internal fun upgradeNodeButtonOffset(
-    center: Offset,
-    radius: Float,
-    viewportSize: IntSize,
-    buttonSize: IntSize,
-    baseMarginPx: Int,
-    horizontalGapPx: Int,
-    verticalGapPx: Int,
-    edgeInsets: EdgeInsets = EdgeInsets()
-): IntOffset {
-    val minX = (edgeInsets.left + baseMarginPx).toFloat()
-    val minY = (edgeInsets.top + baseMarginPx).toFloat()
-    val maxX = (viewportSize.width - buttonSize.width - edgeInsets.right - baseMarginPx).toFloat()
-    val maxY = (viewportSize.height - buttonSize.height - edgeInsets.bottom - baseMarginPx).toFloat()
-    val preferredX = center.x + radius + horizontalGapPx
-    val preferredY = center.y - radius - verticalGapPx
-
-    return IntOffset(
-        x = preferredX.coerceIn(minX, maxX.coerceAtLeast(minX)).toInt(),
-        y = preferredY.coerceIn(minY, maxY.coerceAtLeast(minY)).toInt()
-    )
-}
-
-internal fun selectedUpgradablePlayerBase(state: MatchState): BaseState? {
-    if (state.selectedBaseIds.size != 1) return null
-
-    val selectedBaseId = state.selectedBaseIds.first()
-    val base = state.bases.firstOrNull { it.id == selectedBaseId && it.owner == Owner.PLAYER } ?: return null
-    return base.takeIf { it.capLevel < it.maxLevel }
-}
-
-internal fun inGameHudSummary(state: MatchState): InGameHudSummary {
-    val rivalsRemaining = state.aiStates.keys
-        .asSequence()
-        .filter { it.isAi }
-        .count { ownerHasPresence(state, it) }
-
-    val rivalsLabel = when (rivalsRemaining) {
-        0 -> "Clear"
-        1 -> "1 Left"
-        else -> "$rivalsRemaining Left"
-    }
-
-    return InGameHudSummary(
-        levelName = state.levelName,
-        fundsLabel = formatFunds(state.playerMoney),
-        rivalsLabel = rivalsLabel
-    )
-}
-
-internal fun formatCompletionTime(elapsedSeconds: Float): String {
-    val totalSeconds = elapsedSeconds.toInt().coerceAtLeast(0)
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "%d:%02d".format(minutes, seconds)
-}
-
-internal fun formatStars(stars: Int): String {
-    val filled = stars.coerceIn(0, 3)
-    return buildString(3) {
-        repeat(filled) { append('★') }
-        repeat(3 - filled) { append('☆') }
+@Composable
+private fun UpgradePlaceholderCard(title: String, subtitle: String, description: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCardAlt)
+            .border(1.dp, BorderDim, RoundedCornerShape(12.dp))
+            .padding(16.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(title, color = TextDim, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(subtitle, color = TextDim, fontSize = 11.sp)
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(BgCard)
+                        .border(1.dp, BorderDim, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text("LOCKED", color = TextDim, fontSize = 10.sp, letterSpacing = 1.sp)
+                }
+            }
+            Text(description, color = TextDim, fontSize = 12.sp)
+        }
     }
 }
