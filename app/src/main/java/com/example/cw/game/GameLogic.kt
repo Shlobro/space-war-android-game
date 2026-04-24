@@ -306,10 +306,23 @@ private fun runStandardAiTurn(state: MatchState, owner: Owner): MatchState {
         }
 
         if (!acted) {
-            updatedState = upgradeBaseForOwner(updatedState, source.id, owner, showMessage = false)
+            if (source.capLevel < source.maxLevel) {
+                updatedState = upgradeBaseForOwner(updatedState, source.id, owner, showMessage = false)
+            } else if (source.units >= source.cap.toFloat()) {
+                val pressureTarget = preferredPressureTarget(source, nearbyTargets)
+                if (pressureTarget != null) {
+                    updatedState = sendFleet(updatedState, source.id, pressureTarget.id, owner)
+                }
+            }
         }
     }
     return updatedState
+}
+
+private fun preferredPressureTarget(source: BaseState, nearbyTargets: List<BaseState>): BaseState? {
+    return nearbyTargets
+        .asSequence()
+        .minWithOrNull(compareBy<BaseState>({ it.units }, { distance(source.position, it.position) }))
 }
 
 private fun produceShips(bases: List<BaseState>, dt: Float): List<BaseState> {

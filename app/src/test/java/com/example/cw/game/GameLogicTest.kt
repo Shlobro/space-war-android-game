@@ -169,6 +169,28 @@ class GameLogicTest {
     }
 
     @Test
+    fun stepMatch_enemyAiAttacksWhenBaseIsFullAndAtMaxLevel() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 20f, 2),
+                BaseState(2, Offset(200f, 100f), Owner.AI_1, BaseType.COMMAND, 20f, 2, maxLevel = 2),
+                BaseState(3, Offset(260f, 100f), Owner.NEUTRAL, BaseType.COMMAND, 12f, 2),
+                BaseState(4, Offset(320f, 100f), Owner.NEUTRAL, BaseType.COMMAND, 13f, 2),
+                BaseState(5, Offset(380f, 100f), Owner.PLAYER, BaseType.COMMAND, 14f, 2),
+                BaseState(6, Offset(900f, 100f), Owner.NEUTRAL, BaseType.COMMAND, 1f, 2)
+            ),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 0f))
+        )
+
+        val updated = stepMatch(state, dt = 0.016f, cashIncomeMultiplier = 1f)
+
+        assertEquals(1, updated.fleets.size)
+        assertEquals(3, updated.fleets.single().targetId)
+        assertEquals(10f, updated.fleets.single().units)
+        assertEquals(10f, updated.bases.first { it.id == 2 }.units)
+    }
+
+    @Test
     fun stepMatch_doesNotAdvanceElapsedTimeWhilePaused() {
         val state = matchState(
             bases = sampleLevel().bases.map {

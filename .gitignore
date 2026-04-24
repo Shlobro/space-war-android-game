@@ -29,3 +29,5 @@ things.txt
 .kotlin/
 .android-user/
 
+
+.gradle-user-home/

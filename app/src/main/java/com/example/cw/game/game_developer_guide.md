@@ -40,7 +40,7 @@
 - Friendly reinforcements also keep their full arrival count even if that temporarily pushes the destination base above its current cap; normal production then decays any over-cap garrison back toward cap over time.
 - Tapping player-owned bases only changes selection state, empty-space taps clear the current selection, and stale-selection cleanup paths clear invalid selection without replacing the current HUD message; the message banner is reserved for actionable feedback such as launch, upgrade, pause, win, loss, and error states.
 - The in-game HUD does not expose per-AI money totals, level title text, or a remaining-rivals chip; it keeps only the player-funds readout and pause action on screen so the playfield stays less cluttered.
-- Each configured AI controller evaluates nearby non-owned bases every five seconds and attacks when it has a large enough unit advantage; otherwise it buys cap upgrades.
+- Each configured AI controller evaluates nearby non-owned bases every five seconds and attacks when it has a large enough unit advantage; otherwise it buys cap upgrades until a base is both full and at `maxLevel`, at which point that base forces an attack against the weakest nearby non-owned target instead of idling.
 - Route generation inserts detour waypoints when a direct line intersects an obstacle buffer.
 
 ## Extension Points
