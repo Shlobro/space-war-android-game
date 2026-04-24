@@ -1,7 +1,10 @@
 import {
   AI_OWNERS,
+  DEFAULT_THREE_STAR_TIME_SECONDS,
+  DEFAULT_TWO_STAR_TIME_SECONDS,
   DEFAULT_MAX_LEVEL,
   LevelDocument,
+  MAX_STAR_TIME_SECONDS,
   sanitizeCapLevel,
   sanitizeMaxLevel,
   WORLD_HEIGHT,
@@ -23,6 +26,21 @@ export function validateLevel(level: LevelDocument): string[] {
   }
   if (!level.description.trim()) {
     errors.push("Level description is required.");
+  }
+  if (level.twoStarTimeSeconds <= 0) {
+    errors.push("Two-star time must be positive.");
+  }
+  if (level.twoStarTimeSeconds > MAX_STAR_TIME_SECONDS) {
+    errors.push(`Two-star time must not exceed ${MAX_STAR_TIME_SECONDS} seconds.`);
+  }
+  if (level.threeStarTimeSeconds <= 0) {
+    errors.push("Three-star time must be positive.");
+  }
+  if (level.threeStarTimeSeconds > MAX_STAR_TIME_SECONDS) {
+    errors.push(`Three-star time must not exceed ${MAX_STAR_TIME_SECONDS} seconds.`);
+  }
+  if (level.threeStarTimeSeconds >= level.twoStarTimeSeconds) {
+    errors.push("Three-star time must be lower than the two-star time.");
   }
   if (!level.introMessage.trim()) {
     errors.push("Intro message is required.");
@@ -99,6 +117,8 @@ export function normalizeLevel(level: LevelDocument): LevelDocument {
   return {
     ...level,
     schemaVersion: 2,
+    twoStarTimeSeconds: normalizePositiveInt(level.twoStarTimeSeconds, DEFAULT_TWO_STAR_TIME_SECONDS),
+    threeStarTimeSeconds: normalizePositiveInt(level.threeStarTimeSeconds, DEFAULT_THREE_STAR_TIME_SECONDS),
     worldWidth: level.worldWidth || WORLD_WIDTH,
     worldHeight: level.worldHeight || WORLD_HEIGHT,
     bases: level.bases.map((base) => {
@@ -122,4 +142,9 @@ export function normalizeLevel(level: LevelDocument): LevelDocument {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function normalizePositiveInt(value: number | undefined, fallback: number): number {
+  const rounded = Math.round(value ?? fallback);
+  return rounded > 0 ? rounded : fallback;
 }

@@ -18,3 +18,4 @@
 
 - Put gameplay content that should ship with the app in `assets/` rather than hardcoding it in Kotlin.
 - Keep detailed package behavior documented in the closest child guide and link to it from here instead of repeating it.
+- Keep authored campaign metadata such as star thresholds in the shared level JSON so the runtime and editor stay aligned, and keep player progression persistence inside the game package rather than scattering it through UI files.

@@ -7,7 +7,7 @@
 ## Files
 
 - `main.tsx`: React bootstrap for the editor app.
-- `App.tsx`: Main editor shell, file workflow, responsive phone-framed playfield, and a right sidebar that swaps between selected-node properties, placement defaults, and level metadata.
+- `App.tsx`: Main editor shell, file workflow, responsive phone-framed playfield, and a right sidebar that swaps between selected-node properties, placement defaults, and level metadata, including the authored 2-star and 3-star completion-time targets.
 - `editor.css`: Layout and styling for the editor UI, including the device frame around the playable screen.
 - `level-api.ts`: Browser-side API client for listing, opening, saving, and deleting packaged level JSON files through the local dev server.
 - `level-types.ts`: Browser-side types mirroring the packaged level JSON format.
@@ -23,3 +23,4 @@
 - Keep the derived level formulas synchronized with the Android runtime: `cap = capLevel * 10` and `radius = 36 + (capLevel - 1) * 6`.
 - Treat the numeric unit labels as visual overlays only; pointer handling should stay on the draggable node shapes underneath.
 - Keep owner choices, AI controller types, and node/base types aligned with the Android runtime schema. When adding a new AI owner, AI type, node type, or authored field, update both the editor and the Android app in the same change.
+- Keep star-threshold defaults, sane maximums, and validation synchronized with the Kotlin level schema so authors cannot save impossible or absurd completion targets.

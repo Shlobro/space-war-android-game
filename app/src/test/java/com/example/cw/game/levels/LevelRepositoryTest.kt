@@ -20,6 +20,8 @@ class LevelRepositoryTest {
         assertEquals(3, level.bases.size)
         assertEquals(1, level.obstacles.size)
         assertEquals(BaseType.COMMAND, level.bases.first().type)
+        assertEquals(90, level.starThresholds.twoStarTimeSeconds)
+        assertEquals(60, level.starThresholds.threeStarTimeSeconds)
     }
 
     @Test
@@ -62,12 +64,60 @@ class LevelRepositoryTest {
     }
 
     @Test
+    fun decode_rejectsThreeStarThresholdNotFasterThanTwoStarThreshold() {
+        val json = """
+            {
+              "schemaVersion": 2,
+              "levelId": 1,
+              "name": "Level 1",
+              "description": "Description 1",
+              "sortOrder": 1,
+              "unlockAfterLevelId": null,
+              "twoStarTimeSeconds": 90,
+              "threeStarTimeSeconds": 90,
+              "worldWidth": 1000,
+              "worldHeight": 1600,
+              "introMessage": "Start",
+              "aiControllers": [
+                { "owner": "AI_1", "type": "STANDARD" }
+              ],
+              "bases": [
+                { "id": 1, "x": 100, "y": 1500, "owner": "PLAYER", "type": "COMMAND", "units": 20, "capLevel": 2, "maxLevel": 10 },
+                { "id": 2, "x": 900, "y": 100, "owner": "AI_1", "type": "COMMAND", "units": 20, "capLevel": 2, "maxLevel": 10 },
+                { "id": 3, "x": 500, "y": 800, "owner": "NEUTRAL", "type": "COMMAND", "units": 10, "capLevel": 1, "maxLevel": 10 }
+              ],
+              "obstacles": [
+                { "x": 450, "y": 700, "radius": 60 }
+              ]
+            }
+        """.trimIndent()
+
+        val error = runCatching { LevelJson.decode(json) }.exceptionOrNull()
+
+        assertTrue(error is LevelParseException)
+        assertTrue(error?.message?.contains("threeStarTimeSeconds must be less than twoStarTimeSeconds") == true)
+    }
+
+    @Test
+    fun decode_rejectsStarThresholdsAboveMaximum() {
+        val json = validJson(levelId = 1, sortOrder = 1).replace(
+            "\"twoStarTimeSeconds\": 90",
+            "\"twoStarTimeSeconds\": 5000"
+        )
+
+        val error = runCatching { LevelJson.decode(json) }.exceptionOrNull()
+
+        assertTrue(error is LevelParseException)
+        assertTrue(error?.message?.contains("twoStarTimeSeconds must not exceed") == true)
+    }
+
+    @Test
     fun sortLevelSummaries_ordersBySortOrderThenLevelId() {
         val sorted = sortLevelSummaries(
             listOf(
-                LevelSummary(2, "B", "B", 2, null),
-                LevelSummary(1, "A", "A", 1, null),
-                LevelSummary(4, "D", "D", 2, null)
+                LevelSummary(2, "B", "B", 2, null, StarThresholds()),
+                LevelSummary(1, "A", "A", 1, null, StarThresholds()),
+                LevelSummary(4, "D", "D", 2, null, StarThresholds())
             )
         )
 
@@ -76,7 +126,7 @@ class LevelRepositoryTest {
 
     @Test
     fun isLevelUnlocked_usesUnlockAfterLevelId() {
-        val locked = LevelSummary(2, "Level 2", "Second", 2, 1)
+        val locked = LevelSummary(2, "Level 2", "Second", 2, 1, StarThresholds())
         val campaign = CampaignState(completedLevels = emptySet())
 
         assertFalse(isLevelUnlocked(locked, campaign))
@@ -92,6 +142,7 @@ class LevelRepositoryTest {
             description = "Desc",
             sortOrder = 9,
             unlockAfterLevelId = null,
+            starThresholds = StarThresholds(90, 60),
             worldBounds = WorldBounds(1200f, 1800f),
             introMessage = "Testing",
             aiControllers = listOf(LevelAiDefinition(Owner.AI_1, AiType.STANDARD)),
@@ -106,6 +157,7 @@ class LevelRepositoryTest {
 
         assertEquals(9, match.levelId)
         assertEquals("Test Level", match.levelName)
+        assertEquals(90, match.starThresholds.twoStarTimeSeconds)
         assertEquals(1200f, match.worldBounds.width)
         assertEquals(1800f, match.worldBounds.height)
         assertEquals("Testing", match.message)
@@ -142,6 +194,8 @@ class LevelRepositoryTest {
               "description": "Description $levelId",
               "sortOrder": $sortOrder,
               "unlockAfterLevelId": null,
+              "twoStarTimeSeconds": 90,
+              "threeStarTimeSeconds": 60,
               "worldWidth": 1000,
               "worldHeight": 1600,
               "introMessage": "Start",

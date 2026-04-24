@@ -5,6 +5,8 @@
   "description": "Introduces fast ships. Some captured map bases launch faster-moving fleets.",
   "sortOrder": 2,
   "unlockAfterLevelId": 1,
+  "twoStarTimeSeconds": 135,
+  "threeStarTimeSeconds": 90,
   "worldWidth": 1000,
   "worldHeight": 1600,
   "introMessage": "Fast lanes open up once you capture relay points",

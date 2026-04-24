@@ -38,6 +38,8 @@ internal fun createMatch(level: LevelDefinition): MatchState {
         status = MatchStatus.RUNNING,
         levelId = level.levelId,
         levelName = level.name,
+        starThresholds = level.starThresholds,
+        elapsedSeconds = 0f,
         isPaused = false
     )
 }

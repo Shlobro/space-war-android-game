@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.cw.game.levels.BASE_RADIUS_MIN
 import com.example.cw.game.levels.DEFAULT_MAX_LEVEL
 import com.example.cw.game.levels.RADIUS_PER_LEVEL
+import com.example.cw.game.levels.StarThresholds
 import com.example.cw.game.levels.WorldBounds
 
 internal data class MatchState(
@@ -20,26 +21,36 @@ internal data class MatchState(
     val status: MatchStatus,
     val levelId: Int,
     val levelName: String,
+    val starThresholds: StarThresholds,
+    val elapsedSeconds: Float,
     val isPaused: Boolean,
+    val earnedStars: Int = 0,
+    val improvedBestStars: Boolean = false,
     val earnedUpgradePoint: Boolean = false
 )
 
 internal data class CampaignState(
     val completedLevels: Set<Int> = emptySet(),
+    val starsByLevel: Map<Int, Int> = emptyMap(),
     val upgradePoints: Int = 0,
     val cashRateLevel: Int = 0
 ) {
+    val totalStars: Int get() = starsByLevel.values.sum()
+
     fun cashIncomeMultiplier(): Float = 1f + cashRateLevel * 0.25f
 
-    fun completeLevel(levelId: Int): CampaignState {
-        return if (levelId in completedLevels) {
-            this
-        } else {
-            copy(
-                completedLevels = completedLevels + levelId,
-                upgradePoints = upgradePoints + 1
-            )
-        }
+    fun starsForLevel(levelId: Int): Int = starsByLevel[levelId] ?: 0
+
+    fun completeLevel(levelId: Int, starsEarned: Int): CampaignState {
+        require(starsEarned in 1..3) { "starsEarned must be between 1 and 3" }
+        val previousBest = starsForLevel(levelId)
+        val bestStars = maxOf(previousBest, starsEarned)
+        val completed = levelId in completedLevels
+        return copy(
+            completedLevels = completedLevels + levelId,
+            starsByLevel = starsByLevel + (levelId to bestStars),
+            upgradePoints = if (completed) upgradePoints else upgradePoints + 1
+        )
     }
 }
 

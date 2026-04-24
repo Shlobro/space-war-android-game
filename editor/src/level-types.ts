@@ -4,6 +4,9 @@ export const BASE_RADIUS_MIN = 36;
 export const RADIUS_PER_LEVEL = 6;
 export const DEFAULT_CAP_LEVEL = 4;
 export const DEFAULT_MAX_LEVEL = 10;
+export const DEFAULT_TWO_STAR_TIME_SECONDS = 120;
+export const DEFAULT_THREE_STAR_TIME_SECONDS = 75;
+export const MAX_STAR_TIME_SECONDS = 3600;
 
 export type Owner = "PLAYER" | "AI_1" | "AI_2" | "AI_3" | "AI_4" | "NEUTRAL";
 export type BaseType =
@@ -44,6 +47,8 @@ export type LevelDocument = {
   description: string;
   sortOrder: number;
   unlockAfterLevelId: number | null;
+  twoStarTimeSeconds: number;
+  threeStarTimeSeconds: number;
   worldWidth: number;
   worldHeight: number;
   introMessage: string;
@@ -89,6 +94,8 @@ export function createEmptyLevel(nextLevelId: number): LevelDocument {
     description: "Describe the level objective here.",
     sortOrder: nextLevelId,
     unlockAfterLevelId: nextLevelId > 1 ? nextLevelId - 1 : null,
+    twoStarTimeSeconds: DEFAULT_TWO_STAR_TIME_SECONDS,
+    threeStarTimeSeconds: DEFAULT_THREE_STAR_TIME_SECONDS,
     worldWidth: WORLD_WIDTH,
     worldHeight: WORLD_HEIGHT,
     introMessage: "Capture nearby structures and push forward",

@@ -10,6 +10,9 @@ internal const val DEFAULT_WORLD_HEIGHT = 1600f
 internal const val BASE_RADIUS_MIN = 36f
 internal const val RADIUS_PER_LEVEL = 6f
 internal const val DEFAULT_MAX_LEVEL = 10
+internal const val DEFAULT_TWO_STAR_TIME_SECONDS = 120
+internal const val DEFAULT_THREE_STAR_TIME_SECONDS = 75
+internal const val MAX_STAR_TIME_SECONDS = 3600
 
 internal data class WorldBounds(
     val width: Float = DEFAULT_WORLD_WIDTH,
@@ -23,6 +26,7 @@ internal data class LevelDefinition(
     val description: String,
     val sortOrder: Int,
     val unlockAfterLevelId: Int?,
+    val starThresholds: StarThresholds,
     val worldBounds: WorldBounds,
     val introMessage: String,
     val aiControllers: List<LevelAiDefinition>,
@@ -35,7 +39,8 @@ internal data class LevelDefinition(
             name = name,
             description = description,
             sortOrder = sortOrder,
-            unlockAfterLevelId = unlockAfterLevelId
+            unlockAfterLevelId = unlockAfterLevelId,
+            starThresholds = starThresholds
         )
     }
 }
@@ -45,7 +50,13 @@ internal data class LevelSummary(
     val name: String,
     val description: String,
     val sortOrder: Int,
-    val unlockAfterLevelId: Int?
+    val unlockAfterLevelId: Int?,
+    val starThresholds: StarThresholds
+)
+
+internal data class StarThresholds(
+    val twoStarTimeSeconds: Int = DEFAULT_TWO_STAR_TIME_SECONDS,
+    val threeStarTimeSeconds: Int = DEFAULT_THREE_STAR_TIME_SECONDS
 )
 
 internal data class LevelAiDefinition(

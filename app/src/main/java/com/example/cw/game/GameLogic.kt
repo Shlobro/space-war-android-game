@@ -184,9 +184,10 @@ private fun upgradeBaseForOwner(
 }
 
 internal fun stepMatch(state: MatchState, dt: Float, cashIncomeMultiplier: Float): MatchState {
-    if (state.status != MatchStatus.RUNNING) return state
+    if (state.status != MatchStatus.RUNNING || state.isPaused) return state
 
     var bases = produceShips(state.bases, dt)
+    val elapsedSeconds = state.elapsedSeconds + dt
     val playerMoney = state.playerMoney + incomePerSecond(Owner.PLAYER, bases, cashIncomeMultiplier) * dt
     val aiStatesWithIncome = state.aiStates.mapValues { (owner, aiState) ->
         aiState.copy(money = aiState.money + incomePerSecond(owner, bases, cashIncomeMultiplier) * dt)
@@ -222,10 +223,17 @@ internal fun stepMatch(state: MatchState, dt: Float, cashIncomeMultiplier: Float
         !playerStillInMatch -> MatchStatus.PLAYER_LOST
         else -> MatchStatus.RUNNING
     }
+    val earnedStars = if (status == MatchStatus.PLAYER_WON) {
+        starsEarnedForCompletion(elapsedSeconds, state.starThresholds)
+    } else {
+        0
+    }
 
     return aiState.copy(
         selectedBaseIds = normalizedSelection,
         status = status,
+        elapsedSeconds = elapsedSeconds,
+        earnedStars = earnedStars,
         message = when (status) {
             MatchStatus.RUNNING -> aiState.message
             MatchStatus.PLAYER_WON -> "All AI structures captured"
@@ -236,6 +244,14 @@ internal fun stepMatch(state: MatchState, dt: Float, cashIncomeMultiplier: Float
 
 internal fun ownerHasPresence(state: MatchState, owner: Owner): Boolean {
     return state.bases.any { it.owner == owner } || state.fleets.any { it.owner == owner }
+}
+
+internal fun starsEarnedForCompletion(elapsedSeconds: Float, starThresholds: com.example.cw.game.levels.StarThresholds): Int {
+    return when {
+        elapsedSeconds <= starThresholds.threeStarTimeSeconds -> 3
+        elapsedSeconds <= starThresholds.twoStarTimeSeconds -> 2
+        else -> 1
+    }
 }
 
 private fun runEnemyAi(state: MatchState, dt: Float): MatchState {

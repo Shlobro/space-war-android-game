@@ -7,8 +7,10 @@ import com.example.cw.game.levels.LevelAiDefinition
 import com.example.cw.game.levels.LevelBaseDefinition
 import com.example.cw.game.levels.LevelDefinition
 import com.example.cw.game.levels.LevelObstacleDefinition
+import com.example.cw.game.levels.StarThresholds
 import com.example.cw.game.levels.WorldBounds
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -164,6 +166,29 @@ class GameLogicTest {
         assertEquals(1, afterThink.fleets.size)
         assertEquals(10f, afterThink.fleets.single().units)
         assertEquals(10f, afterThink.bases.first { it.id == 2 }.units)
+    }
+
+    @Test
+    fun stepMatch_doesNotAdvanceElapsedTimeWhilePaused() {
+        val state = matchState(
+            bases = sampleLevel().bases.map {
+                BaseState(
+                    id = it.id,
+                    position = Offset(it.x, it.y),
+                    owner = it.owner,
+                    type = it.type,
+                    units = it.units,
+                    capLevel = it.capLevel,
+                    maxLevel = it.maxLevel
+                )
+            },
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 5f))
+        ).copy(isPaused = true, elapsedSeconds = 12f)
+
+        val updated = stepMatch(state, dt = 5f, cashIncomeMultiplier = 1f)
+
+        assertEquals(12f, updated.elapsedSeconds, 0.001f)
+        assertEquals(state.playerMoney, updated.playerMoney, 0.001f)
     }
 
     @Test
@@ -645,12 +670,104 @@ class GameLogicTest {
     }
 
     @Test
+    fun inGameHudSummary_excludesDefeatedAiOwners() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(
+                    id = 1,
+                    position = Offset(100f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 2,
+                    position = Offset(200f, 100f),
+                    owner = Owner.AI_1,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                ),
+                BaseState(
+                    id = 3,
+                    position = Offset(300f, 100f),
+                    owner = Owner.AI_3,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            ),
+            aiStates = mapOf(
+                Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 10f, 1f),
+                Owner.AI_2 to AiRuntimeState(AiType.STANDARD, 10f, 1f),
+                Owner.AI_3 to AiRuntimeState(AiType.STANDARD, 10f, 1f)
+            )
+        )
+
+        val summary = inGameHudSummary(state)
+
+        assertEquals("2 Left", summary.rivalsLabel)
+    }
+
+    @Test
     fun togglePause_flipsPausedState() {
         val paused = togglePause(matchState(bases = emptyList()))
         val resumed = togglePause(paused)
 
         assertTrue(paused.isPaused)
-        assertTrue(!resumed.isPaused)
+        assertFalse(resumed.isPaused)
+    }
+
+    @Test
+    fun starsEarnedForCompletion_usesConfiguredThresholds() {
+        val thresholds = StarThresholds(twoStarTimeSeconds = 90, threeStarTimeSeconds = 60)
+
+        assertEquals(3, starsEarnedForCompletion(59f, thresholds))
+        assertEquals(2, starsEarnedForCompletion(75f, thresholds))
+        assertEquals(1, starsEarnedForCompletion(120f, thresholds))
+    }
+
+    @Test
+    fun campaignCompleteLevel_tracksBestStarsWithoutDoubleCounting() {
+        val first = CampaignState().completeLevel(levelId = 2, starsEarned = 2)
+        val improved = first.completeLevel(levelId = 2, starsEarned = 3)
+        val repeated = improved.completeLevel(levelId = 2, starsEarned = 1)
+
+        assertEquals(1, first.upgradePoints)
+        assertEquals(2, first.totalStars)
+        assertEquals(3, improved.totalStars)
+        assertEquals(3, improved.starsForLevel(2))
+        assertEquals(1, repeated.upgradePoints)
+        assertEquals(3, repeated.totalStars)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun campaignCompleteLevel_rejectsInvalidStarCounts() {
+        CampaignState().completeLevel(levelId = 2, starsEarned = 0)
+    }
+
+    @Test
+    fun applyPostStepCampaignProgress_awardsStarsAndOnlyGrantsUpgradePointOnce() {
+        val previousMatch = matchState(bases = sampleMatchBases())
+        val wonMatch = previousMatch.copy(
+            status = MatchStatus.PLAYER_WON,
+            elapsedSeconds = 58f,
+            earnedStars = 3,
+            levelId = 4
+        )
+
+        val firstResult = applyPostStepCampaignProgress(CampaignState(), previousMatch, wonMatch)
+        val replayResult = applyPostStepCampaignProgress(firstResult.campaign, previousMatch, wonMatch.copy(earnedStars = 2))
+
+        assertEquals(3, firstResult.campaign.starsForLevel(4))
+        assertEquals(1, firstResult.campaign.upgradePoints)
+        assertTrue(firstResult.match.earnedUpgradePoint)
+        assertTrue(firstResult.match.improvedBestStars)
+        assertEquals(3, replayResult.campaign.starsForLevel(4))
+        assertEquals(1, replayResult.campaign.upgradePoints)
+        assertFalse(replayResult.match.earnedUpgradePoint)
+        assertFalse(replayResult.match.improvedBestStars)
     }
 
     @Test
@@ -779,6 +896,7 @@ class GameLogicTest {
             description = "Sample",
             sortOrder = 1,
             unlockAfterLevelId = null,
+            starThresholds = StarThresholds(90, 60),
             worldBounds = WorldBounds(),
             introMessage = "Start",
             aiControllers = listOf(LevelAiDefinition(Owner.AI_1, AiType.STANDARD)),
@@ -789,6 +907,20 @@ class GameLogicTest {
             ),
             obstacles = listOf(LevelObstacleDefinition(500f, 520f, 95f))
         )
+    }
+
+    private fun sampleMatchBases(): List<BaseState> {
+        return sampleLevel().bases.map {
+            BaseState(
+                id = it.id,
+                position = Offset(it.x, it.y),
+                owner = it.owner,
+                type = it.type,
+                units = it.units,
+                capLevel = it.capLevel,
+                maxLevel = it.maxLevel
+            )
+        }
     }
 
     private fun matchState(
@@ -813,6 +945,8 @@ class GameLogicTest {
             status = MatchStatus.RUNNING,
             levelId = 1,
             levelName = "Test",
+            starThresholds = StarThresholds(),
+            elapsedSeconds = 0f,
             isPaused = false
         )
     }

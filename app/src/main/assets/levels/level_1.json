@@ -5,6 +5,8 @@
   "description": "Regular ships only. No special abilities. Capture the map and defeat the enemy network.",
   "sortOrder": 1,
   "unlockAfterLevelId": null,
+  "twoStarTimeSeconds": 120,
+  "threeStarTimeSeconds": 75,
   "worldWidth": 1000,
   "worldHeight": 1600,
   "introMessage": "Capture nearby structures and push forward",

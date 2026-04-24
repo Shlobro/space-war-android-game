@@ -17,6 +17,10 @@ internal object LevelJson {
             description = root.string("description"),
             sortOrder = root.int("sortOrder"),
             unlockAfterLevelId = root.optionalInt("unlockAfterLevelId"),
+            starThresholds = StarThresholds(
+                twoStarTimeSeconds = root.optionalInt("twoStarTimeSeconds") ?: DEFAULT_TWO_STAR_TIME_SECONDS,
+                threeStarTimeSeconds = root.optionalInt("threeStarTimeSeconds") ?: DEFAULT_THREE_STAR_TIME_SECONDS
+            ),
             worldBounds = WorldBounds(
                 width = root.float("worldWidth"),
                 height = root.float("worldHeight")
@@ -83,6 +87,21 @@ internal object LevelJson {
         }
         if (level.description.isBlank()) {
             throw LevelParseException("description must not be blank")
+        }
+        if (level.starThresholds.twoStarTimeSeconds <= 0) {
+            throw LevelParseException("twoStarTimeSeconds must be positive")
+        }
+        if (level.starThresholds.twoStarTimeSeconds > MAX_STAR_TIME_SECONDS) {
+            throw LevelParseException("twoStarTimeSeconds must not exceed $MAX_STAR_TIME_SECONDS")
+        }
+        if (level.starThresholds.threeStarTimeSeconds <= 0) {
+            throw LevelParseException("threeStarTimeSeconds must be positive")
+        }
+        if (level.starThresholds.threeStarTimeSeconds > MAX_STAR_TIME_SECONDS) {
+            throw LevelParseException("threeStarTimeSeconds must not exceed $MAX_STAR_TIME_SECONDS")
+        }
+        if (level.starThresholds.threeStarTimeSeconds >= level.starThresholds.twoStarTimeSeconds) {
+            throw LevelParseException("threeStarTimeSeconds must be less than twoStarTimeSeconds")
         }
         if (level.introMessage.isBlank()) {
             throw LevelParseException("introMessage must not be blank")

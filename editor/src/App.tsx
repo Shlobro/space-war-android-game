@@ -7,6 +7,7 @@ import {
   BASE_TYPES,
   DEFAULT_CAP_LEVEL,
   DEFAULT_MAX_LEVEL,
+  MAX_STAR_TIME_SECONDS,
   LevelAiController,
   LevelBase,
   LevelDocument,
@@ -595,6 +596,26 @@ export default function App() {
                       unlockAfterLevelId: event.target.value === "" ? null : Number(event.target.value)
                     })
                   }
+                />
+              </label>
+              <label>
+                Two-Star Time (s)
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_STAR_TIME_SECONDS}
+                  value={level.twoStarTimeSeconds}
+                  onChange={(event) => updateLevel({ twoStarTimeSeconds: Number(event.target.value) })}
+                />
+              </label>
+              <label>
+                Three-Star Time (s)
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_STAR_TIME_SECONDS}
+                  value={level.threeStarTimeSeconds}
+                  onChange={(event) => updateLevel({ threeStarTimeSeconds: Number(event.target.value) })}
                 />
               </label>
               <label>

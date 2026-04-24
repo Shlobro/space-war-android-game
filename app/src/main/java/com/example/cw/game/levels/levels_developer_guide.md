@@ -6,7 +6,7 @@
 
 ## Files
 
-- `LevelModels.kt`: Runtime data classes for authored levels, summaries, world bounds, and authored base or obstacle entries.
+- `LevelModels.kt`: Runtime data classes for authored levels, summaries, star thresholds, world bounds, and authored base or obstacle entries.
 - `LevelJson.kt`: Small JSON parser plus mapping from JSON documents into validated level models.
 - `LevelRepository.kt`: Level repository interfaces, asset-backed loading, summary sorting, and campaign unlock helpers.
 
@@ -14,7 +14,7 @@
 
 The shared level format is versioned JSON. Each level defines:
 
-- metadata used by the level list: `levelId`, `name`, `description`, `sortOrder`, and optional `unlockAfterLevelId`
+- metadata used by the level list: `levelId`, `name`, `description`, `sortOrder`, optional `unlockAfterLevelId`, and the `twoStarTimeSeconds` plus `threeStarTimeSeconds` thresholds used for campaign scoring
 - world bounds: `worldWidth`, `worldHeight`
 - runtime intro text: `introMessage`
 - `bases[]`: id, position, owner, type, starting units, `capLevel`, and `maxLevel`
@@ -25,6 +25,9 @@ Owner names, AI controller types, and base type names map directly to the existi
 `maxLevel` caps how high the base can be upgraded in-game; `capLevel` must not exceed `maxLevel`.
 Both `cap` and `radius` are derived at runtime and must not be authored in the JSON.
 Schema v1 files are still accepted as a migration bridge. The runtime ignores authored `cap` and `radius`, derives both values from `capLevel`, and defaults missing `maxLevel` to `DEFAULT_MAX_LEVEL`.
+Missing star-threshold fields default to `DEFAULT_TWO_STAR_TIME_SECONDS` and `DEFAULT_THREE_STAR_TIME_SECONDS` as a migration bridge, but authored schema v2 files should provide both values explicitly.
+`threeStarTimeSeconds` must be positive and lower than `twoStarTimeSeconds`.
+Both star thresholds must stay at or below `MAX_STAR_TIME_SECONDS` so authored targets remain sane in both the editor and runtime validation.
 
 ## Working In This Package
 

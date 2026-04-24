@@ -8,13 +8,14 @@
 
 Each file is a JSON level document with:
 
-- top-level metadata such as `schemaVersion`, `levelId`, `name`, `description`, `sortOrder`, `unlockAfterLevelId`, and `introMessage`
+- top-level metadata such as `schemaVersion`, `levelId`, `name`, `description`, `sortOrder`, `unlockAfterLevelId`, `twoStarTimeSeconds`, `threeStarTimeSeconds`, and `introMessage`
 - `worldWidth` and `worldHeight` for the playable map bounds
 - `bases[]` entries for structures placed on the map
 - `obstacles[]` entries for circular blockers used by route generation
 
 Within each base entry, `capLevel` sets the starting capacity tier (cap = capLevel × 10) and visual size (radius = 36 + (capLevel − 1) × 6). `maxLevel` caps in-game upgrades; `capLevel` must not exceed it. Do not author `cap` or `radius` — both are derived at runtime.
 AI-owned bases are configured through level-level `aiControllers[]` entries, which assign an AI owner such as `AI_1` to an AI type such as `STANDARD`.
+`twoStarTimeSeconds` and `threeStarTimeSeconds` define the completion-time targets for earning 2 or 3 stars; finishing slower still awards 1 star, and the 3-star target must be lower than the 2-star target.
 
 The authoritative field definitions and validation live in `app/src/main/java/com/example/cw/game/levels/levels_developer_guide.md`.
 

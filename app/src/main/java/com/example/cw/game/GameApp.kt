@@ -1,5 +1,6 @@
 package com.example.cw.game
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -28,16 +29,23 @@ import com.example.cw.game.levels.LevelRepository
 fun GameApp() {
     val context = LocalContext.current
     val levelRepository: LevelRepository = remember(context) { AssetLevelRepository(context.assets) }
+    val campaignPreferences = remember(context) {
+        context.getSharedPreferences(CAMPAIGN_PREFERENCES_NAME, Context.MODE_PRIVATE)
+    }
     val levelLoadResult = remember(levelRepository) {
         runCatching { levelRepository.listLevels() }
     }
     val levels = levelLoadResult.getOrElse { emptyList() }
 
     var appScreen by remember { mutableStateOf(AppScreen.HOME) }
-    var campaign by remember { mutableStateOf(CampaignState()) }
+    var campaign by remember { mutableStateOf(loadCampaignState(campaignPreferences)) }
     var matchState by remember { mutableStateOf<MatchState?>(null) }
     var viewportSize by remember { mutableStateOf(IntSize.Zero) }
     var levelLoadError by remember { mutableStateOf(levelLoadResult.exceptionOrNull()?.message) }
+
+    LaunchedEffect(campaign) {
+        saveCampaignState(campaignPreferences, campaign)
+    }
 
     LaunchedEffect(appScreen, matchState?.status, matchState?.isPaused, campaign.cashRateLevel) {
         var previousTime = 0L
@@ -54,13 +62,9 @@ fun GameApp() {
                     val dt = ((frameTime - previousTime) / 1_000_000_000f).coerceIn(0.0f, 0.033f)
                     previousTime = frameTime
                     val stepped = stepMatch(currentMatch, dt, campaign.cashIncomeMultiplier())
-                    val earnedUpgradePoint = currentMatch.status == MatchStatus.RUNNING &&
-                        stepped.status == MatchStatus.PLAYER_WON &&
-                        stepped.levelId !in campaign.completedLevels
-                    matchState = stepped.copy(earnedUpgradePoint = earnedUpgradePoint)
-                    if (earnedUpgradePoint) {
-                        campaign = campaign.completeLevel(stepped.levelId)
-                    }
+                    val progress = applyPostStepCampaignProgress(campaign, currentMatch, stepped)
+                    matchState = progress.match
+                    campaign = progress.campaign
                 }
             }
         }
@@ -78,6 +82,7 @@ fun GameApp() {
         ) {
             when (appScreen) {
                 AppScreen.HOME -> HomeScreen(
+                    campaign = campaign,
                     onLevels = { appScreen = AppScreen.LEVELS },
                     onUpgrades = { appScreen = AppScreen.UPGRADES }
                 )
@@ -195,3 +200,34 @@ fun GameApp() {
 }
 
 internal fun togglePause(state: MatchState): MatchState = state.copy(isPaused = !state.isPaused)
+
+internal data class CampaignProgressUpdate(
+    val campaign: CampaignState,
+    val match: MatchState
+)
+
+internal fun applyPostStepCampaignProgress(
+    campaign: CampaignState,
+    previousMatch: MatchState,
+    steppedMatch: MatchState
+): CampaignProgressUpdate {
+    val earnedUpgradePoint = previousMatch.status == MatchStatus.RUNNING &&
+        steppedMatch.status == MatchStatus.PLAYER_WON &&
+        steppedMatch.levelId !in campaign.completedLevels
+    val previousStars = campaign.starsForLevel(steppedMatch.levelId)
+    val improvedBestStars = steppedMatch.status == MatchStatus.PLAYER_WON &&
+        steppedMatch.earnedStars > previousStars
+    val updatedCampaign = if (steppedMatch.status == MatchStatus.PLAYER_WON) {
+        campaign.completeLevel(steppedMatch.levelId, steppedMatch.earnedStars)
+    } else {
+        campaign
+    }
+
+    return CampaignProgressUpdate(
+        campaign = updatedCampaign,
+        match = steppedMatch.copy(
+            earnedUpgradePoint = earnedUpgradePoint,
+            improvedBestStars = improvedBestStars
+        )
+    )
+}

@@ -60,6 +60,7 @@ internal data class InGameHudSummary(
 
 @Composable
 internal fun HomeScreen(
+    campaign: CampaignState,
     onLevels: () -> Unit,
     onUpgrades: () -> Unit
 ) {
@@ -88,6 +89,7 @@ internal fun HomeScreen(
                     fontSize = 28.sp
                 )
                 Text("Prototype campaign shell", color = Color(0xFFA7C0D8))
+                Text("Stars: ${campaign.totalStars}", color = Color(0xFFF6CB7D), fontWeight = FontWeight.SemiBold)
                 Button(onClick = onLevels, modifier = Modifier.fillMaxWidth()) { Text("Levels") }
                 Button(onClick = onUpgrades, modifier = Modifier.fillMaxWidth()) { Text("Upgrades") }
             }
@@ -120,6 +122,12 @@ internal fun LevelSelectScreen(
             )
         }
 
+        Text(
+            "Stars: ${campaign.totalStars}",
+            color = Color(0xFFF6CB7D),
+            fontWeight = FontWeight.SemiBold
+        )
+
         if (loadError != null) {
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xAA462326)), shape = RoundedCornerShape(24.dp)) {
                 Text(
@@ -142,10 +150,16 @@ internal fun LevelSelectScreen(
 
         levels.forEach { level ->
             val unlocked = isLevelUnlocked(level, campaign)
+            val stars = campaign.starsForLevel(level.levelId)
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)), shape = RoundedCornerShape(24.dp)) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(level.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     Text(level.description, color = Color(0xFFA7C0D8))
+                    Text(
+                        text = "Stars: ${formatStars(stars)}",
+                        color = Color(0xFFF6CB7D),
+                        fontWeight = FontWeight.SemiBold
+                    )
                     Text(
                         text = when {
                             level.levelId in campaign.completedLevels -> "Completed"
@@ -191,6 +205,7 @@ internal fun UpgradesScreen(
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xB2162533)), shape = RoundedCornerShape(24.dp)) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Upgrade Points: ${campaign.upgradePoints}", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Stars: ${campaign.totalStars}", color = Color(0xFFF6CB7D), fontWeight = FontWeight.SemiBold)
                 Text("Cash Flow Level: ${campaign.cashRateLevel}", color = Color(0xFFA7C0D8))
                 Text(
                     "Increases how fast funds rise during a level. More upgrades will be added later.",
@@ -315,8 +330,7 @@ private fun HudActionChip(
         colors = CardDefaults.cardColors(containerColor = Color(0xCCF6CB7D)),
         shape = RoundedCornerShape(18.dp),
         modifier = Modifier
-            .sizeIn(minWidth = 74.dp)
-            .heightIn(min = 48.dp)
+            .sizeIn(minWidth = 74.dp, minHeight = 48.dp)
     ) {
         Box(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -383,9 +397,25 @@ internal fun LevelEndOverlay(
                 Text(state.levelName, color = Color(0xFFA7C0D8))
                 if (state.status == MatchStatus.PLAYER_WON) {
                     Text(
+                        "Time: ${formatCompletionTime(state.elapsedSeconds)}",
+                        color = Color(0xFFA7C0D8)
+                    )
+                    Text(
+                        "Stars Earned: ${formatStars(state.earnedStars)}",
+                        color = Color(0xFFF6CB7D),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "Targets: 2 stars <= ${formatCompletionTime(state.starThresholds.twoStarTimeSeconds.toFloat())}, 3 stars <= ${formatCompletionTime(state.starThresholds.threeStarTimeSeconds.toFloat())}",
+                        color = Color(0xFFA7C0D8)
+                    )
+                    Text(
                         if (state.earnedUpgradePoint) "You earned 1 upgrade point." else "Level already completed.",
                         color = Color(0xFFA7C0D8)
                     )
+                    if (state.improvedBestStars) {
+                        Text("Best star record improved.", color = Color(0xFF9BE7AE))
+                    }
                 }
                 Button(onClick = onLevels, modifier = Modifier.fillMaxWidth()) { Text("Back To Levels") }
             }
@@ -526,4 +556,19 @@ internal fun inGameHudSummary(state: MatchState): InGameHudSummary {
         fundsLabel = formatFunds(state.playerMoney),
         rivalsLabel = rivalsLabel
     )
+}
+
+internal fun formatCompletionTime(elapsedSeconds: Float): String {
+    val totalSeconds = elapsedSeconds.toInt().coerceAtLeast(0)
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%d:%02d".format(minutes, seconds)
+}
+
+internal fun formatStars(stars: Int): String {
+    val filled = stars.coerceIn(0, 3)
+    return buildString(3) {
+        repeat(filled) { append('★') }
+        repeat(3 - filled) { append('☆') }
+    }
 }

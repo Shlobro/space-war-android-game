@@ -24,3 +24,4 @@
 - The editor canvas is presented inside a phone-shell frame so the visible placement boundary matches the intended mobile viewport.
 - The center canvas scales to the available viewport so the phone frame, placement controls, and status bar remain visible without center-column scrolling on typical desktop screens.
 - Keep the editor schema synchronized with the Android runtime. New AI owners, AI controller types, node types, or other authored level fields must be added to both sides together.
+- Level metadata editing includes the authored 2-star and 3-star completion targets used by the runtime campaign UI and scoring logic, and the editor constrains those fields to the same sane upper bound used by the Android runtime.
