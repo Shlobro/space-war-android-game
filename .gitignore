@@ -31,3 +31,19 @@ things.txt
 
 
 .gradle-user-home/
+
+# Output
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Signing
+*.jks
+*.keystore
+*.google_services.json
+
+# Temp/Logs
+*.log
+.temp/
+tmp/

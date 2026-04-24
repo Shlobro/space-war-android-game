@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -299,13 +300,22 @@ internal fun LevelEndOverlay(
                     )
                 }
 
-                if (state.earnedUpgradePoint) {
+                if (state.earnedStarReward > 0) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("●", color = AccentGold, fontSize = 10.sp)
-                        Text("+1 Upgrade Point earned", color = AccentGold, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            pluralStringResource(
+                                id = R.plurals.stars_added_to_reserves,
+                                count = state.earnedStarReward,
+                                state.earnedStarReward
+                            ),
+                            color = AccentGold,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
 

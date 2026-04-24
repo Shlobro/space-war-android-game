@@ -80,7 +80,7 @@ internal fun HomeScreen(
             ) {
                 Text("★", color = AccentGold, fontSize = 20.sp)
                 Text(
-                    "${campaign.totalStars} Stars Collected",
+                    "${campaign.availableStars} Stars Ready",
                     color = TextPrimary,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold
@@ -142,8 +142,9 @@ internal fun LevelSelectScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    Text("READY", color = TextDim, fontSize = 10.sp, letterSpacing = 1.sp)
                     Text("★", color = AccentGold, fontSize = 16.sp)
-                    Text("${campaign.totalStars}", color = AccentGold, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("${campaign.availableStars}", color = AccentGold, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     Spacer(Modifier.width(12.dp))
                     GhostButton("BACK", onBack)
                 }
@@ -348,8 +349,8 @@ internal fun UpgradesScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    StatPill("POINTS", "${campaign.upgradePoints}", AccentGold)
-                    StatPill("STARS", "${campaign.totalStars} ★", AccentGold)
+                    StatPill("READY", "${campaign.availableStars} ★", AccentGold)
+                    StatPill("EARNED", "${campaign.totalStars} ★", AccentCyan)
                 }
 
                 Spacer(Modifier.height(4.dp))
@@ -360,7 +361,7 @@ internal fun UpgradesScreen(
                     description = "Increases the rate at which funds accumulate during a mission. Each level adds +25% income speed.",
                     currentLevel = campaign.cashRateLevel,
                     cost = 1,
-                    canAfford = campaign.upgradePoints > 0,
+                    canAfford = campaign.availableStars > 0,
                     accentColor = AccentGold,
                     onUpgrade = onUpgradeCashRate
                 )
@@ -372,7 +373,7 @@ internal fun UpgradesScreen(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    "Upgrade points are earned by completing missions.",
+                    "Mission stars are now your upgrade currency. Spend them here and improve your best ratings to refill reserves.",
                     color = TextDim,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
@@ -451,7 +452,7 @@ private fun UpgradeCard(
                 ) {
                     Text("COST", color = TextDim, fontSize = 11.sp, letterSpacing = 1.sp)
                     Text(
-                        "$cost PT",
+                        "$cost ★",
                         color = if (canAfford) AccentGold else TextDim,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold

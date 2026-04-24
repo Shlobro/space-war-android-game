@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 
 private const val LEVEL_BADGE_EDGE_OVERLAP_RATIO = 0.15f
 private const val LEVEL_BADGE_VIEWPORT_MARGIN_PX = 2f
+private const val LEVEL_BADGE_TEXT_BASELINE_OFFSET_RATIO = 0.33f
 
 @Composable
 internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
@@ -205,7 +206,9 @@ private fun DrawScope.drawBase(
     drawContext.canvas.nativeCanvas.drawText(
         base.capLevel.toString(),
         center.x,
-        levelBadgeCenterY + (levelPaint.textSize * 0.33f),
+        // Paint draws text from the baseline, so nudging down by ~1/3 text size
+        // centers the numeral visually inside the circular badge.
+        levelBadgeCenterY + (levelPaint.textSize * LEVEL_BADGE_TEXT_BASELINE_OFFSET_RATIO),
         levelPaint
     )
     if (selected) {
@@ -263,7 +266,7 @@ private fun DrawScope.drawFleet(fleet: FleetState, fleetPaint: Paint, state: Mat
 
 internal data class BaseLabelLayout(
     val unitsOffsetY: Float,
-    val levelBadgeCenterY: Float,
+    val levelBadgeOffsetFromCenter: Float,
     val levelBadgeRadius: Float,
     val selectedOffsetY: Float
 )
@@ -271,10 +274,10 @@ internal data class BaseLabelLayout(
 internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
     val unitsOffsetY = (baseRadius * 0.08f).coerceIn(2f, 5f)
     val levelBadgeRadius = (baseRadius * 0.28f).coerceIn(7f, 12f)
-    val levelBadgeCenterY = baseRadius - (levelBadgeRadius * LEVEL_BADGE_EDGE_OVERLAP_RATIO)
+    val levelBadgeOffsetFromCenter = baseRadius - (levelBadgeRadius * LEVEL_BADGE_EDGE_OVERLAP_RATIO)
     return BaseLabelLayout(
         unitsOffsetY = unitsOffsetY,
-        levelBadgeCenterY = levelBadgeCenterY,
+        levelBadgeOffsetFromCenter = levelBadgeOffsetFromCenter,
         levelBadgeRadius = levelBadgeRadius,
         selectedOffsetY = -baseRadius - 16f
     )
@@ -285,7 +288,7 @@ internal fun resolveLevelBadgeCenterY(
     canvasHeight: Float,
     labelLayout: BaseLabelLayout
 ): Float {
-    val preferredCenterY = baseCenterY + labelLayout.levelBadgeCenterY
+    val preferredCenterY = baseCenterY + labelLayout.levelBadgeOffsetFromCenter
     val minCenterY = labelLayout.levelBadgeRadius + LEVEL_BADGE_VIEWPORT_MARGIN_PX
     val maxCenterY = (canvasHeight - labelLayout.levelBadgeRadius - LEVEL_BADGE_VIEWPORT_MARGIN_PX)
         .coerceAtLeast(minCenterY)

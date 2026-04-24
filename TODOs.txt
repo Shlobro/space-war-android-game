@@ -1,5 +1,3 @@
 currently obsticles effect pathing in a weird way. but the units are definately not avoiding the visual obsacles. 
 
-stars should become spendable currency outside levels, not just a tracked total.
-
 when upgrading a node there should be an animation like a circle filling up.

@@ -116,11 +116,10 @@ fun GameApp() {
                     campaign = campaign,
                     onBack = { appScreen = AppScreen.HOME },
                     onUpgradeCashRate = {
-                        if (campaign.upgradePoints > 0) {
-                            campaign = campaign.copy(
-                                upgradePoints = campaign.upgradePoints - 1,
-                                cashRateLevel = campaign.cashRateLevel + 1
-                            )
+                        if (campaign.availableStars > 0) {
+                            campaign = campaign
+                                .spendStars(cost = 1)
+                                .copy(cashRateLevel = campaign.cashRateLevel + 1)
                         }
                     }
                 )
@@ -234,13 +233,16 @@ internal fun applyPostStepCampaignProgress(
     previousMatch: MatchState,
     steppedMatch: MatchState
 ): CampaignProgressUpdate {
-    val earnedUpgradePoint = previousMatch.status == MatchStatus.RUNNING &&
-        steppedMatch.status == MatchStatus.PLAYER_WON &&
-        steppedMatch.levelId !in campaign.completedLevels
+    val didJustWin = previousMatch.status == MatchStatus.RUNNING &&
+        steppedMatch.status == MatchStatus.PLAYER_WON
     val previousStars = campaign.starsForLevel(steppedMatch.levelId)
-    val improvedBestStars = steppedMatch.status == MatchStatus.PLAYER_WON &&
-        steppedMatch.earnedStars > previousStars
-    val updatedCampaign = if (steppedMatch.status == MatchStatus.PLAYER_WON) {
+    val earnedStarReward = if (didJustWin) {
+        (steppedMatch.earnedStars - previousStars).coerceAtLeast(0)
+    } else {
+        0
+    }
+    val improvedBestStars = earnedStarReward > 0
+    val updatedCampaign = if (didJustWin) {
         campaign.completeLevel(steppedMatch.levelId, steppedMatch.earnedStars)
     } else {
         campaign
@@ -249,7 +251,7 @@ internal fun applyPostStepCampaignProgress(
     return CampaignProgressUpdate(
         campaign = updatedCampaign,
         match = steppedMatch.copy(
-            earnedUpgradePoint = earnedUpgradePoint,
+            earnedStarReward = earnedStarReward,
             improvedBestStars = improvedBestStars
         )
     )

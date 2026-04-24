@@ -29,4 +29,4 @@ The `app` module contains the Android application packaging, the Compose UI entr
 - Put authored runtime content in `src/main/assets` rather than encoding it directly in Kotlin.
 - Put detailed feature documentation in the nearest package guide and link to it from parent guides instead of duplicating explanations.
 - When the authored level vocabulary changes, update both the Android runtime and the external editor in the same change so they continue to read and write the same schema.
-- Campaign progression stores per-level star ratings, persists them across app restarts, and uses the same authored time thresholds that the editor writes into packaged level JSON.
+- Campaign progression stores per-level best star ratings, persists them across app restarts, and treats earned stars as the spendable meta-upgrade currency outside missions while still using the same authored time thresholds that the editor writes into packaged level JSON.

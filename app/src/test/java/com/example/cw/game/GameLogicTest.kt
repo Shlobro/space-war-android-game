@@ -924,17 +924,21 @@ class GameLogicTest {
     }
 
     @Test
-    fun campaignCompleteLevel_tracksBestStarsWithoutDoubleCounting() {
+    fun campaignCompleteLevel_tracksBestStarsAndSpendableCurrencyWithoutDoubleCounting() {
         val first = CampaignState().completeLevel(levelId = 2, starsEarned = 2)
         val improved = first.completeLevel(levelId = 2, starsEarned = 3)
         val repeated = improved.completeLevel(levelId = 2, starsEarned = 1)
+        val spent = improved.spendStars(cost = 2)
 
-        assertEquals(1, first.upgradePoints)
         assertEquals(2, first.totalStars)
+        assertEquals(2, first.availableStars)
         assertEquals(3, improved.totalStars)
+        assertEquals(3, improved.availableStars)
         assertEquals(3, improved.starsForLevel(2))
-        assertEquals(1, repeated.upgradePoints)
         assertEquals(3, repeated.totalStars)
+        assertEquals(3, repeated.availableStars)
+        assertEquals(1, spent.availableStars)
+        assertEquals(2, spent.spentStars)
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -943,7 +947,7 @@ class GameLogicTest {
     }
 
     @Test
-    fun applyPostStepCampaignProgress_awardsStarsAndOnlyGrantsUpgradePointOnce() {
+    fun applyPostStepCampaignProgress_awardsOnlyNewBestStarsToSpendableCurrency() {
         val previousMatch = matchState(bases = sampleMatchBases())
         val wonMatch = previousMatch.copy(
             status = MatchStatus.PLAYER_WON,
@@ -956,13 +960,30 @@ class GameLogicTest {
         val replayResult = applyPostStepCampaignProgress(firstResult.campaign, previousMatch, wonMatch.copy(earnedStars = 2))
 
         assertEquals(3, firstResult.campaign.starsForLevel(4))
-        assertEquals(1, firstResult.campaign.upgradePoints)
-        assertTrue(firstResult.match.earnedUpgradePoint)
+        assertEquals(3, firstResult.campaign.availableStars)
+        assertEquals(3, firstResult.match.earnedStarReward)
         assertTrue(firstResult.match.improvedBestStars)
         assertEquals(3, replayResult.campaign.starsForLevel(4))
-        assertEquals(1, replayResult.campaign.upgradePoints)
-        assertFalse(replayResult.match.earnedUpgradePoint)
+        assertEquals(3, replayResult.campaign.availableStars)
+        assertEquals(0, replayResult.match.earnedStarReward)
         assertFalse(replayResult.match.improvedBestStars)
+    }
+
+    @Test
+    fun applyPostStepCampaignProgress_ignoresAlreadyFinishedWinStates() {
+        val finishedCampaign = CampaignState().completeLevel(levelId = 4, starsEarned = 3)
+        val previousMatch = matchState(bases = sampleMatchBases()).copy(
+            status = MatchStatus.PLAYER_WON,
+            earnedStars = 3,
+            levelId = 4
+        )
+        val steppedMatch = previousMatch.copy(earnedStars = 3)
+
+        val result = applyPostStepCampaignProgress(finishedCampaign, previousMatch, steppedMatch)
+
+        assertEquals(finishedCampaign, result.campaign)
+        assertEquals(0, result.match.earnedStarReward)
+        assertFalse(result.match.improvedBestStars)
     }
 
     @Test
@@ -970,9 +991,9 @@ class GameLogicTest {
         val baseRadius = 36f
         val layout = baseLabelLayout(baseRadius)
 
-        assertTrue(layout.levelBadgeCenterY > layout.unitsOffsetY)
-        assertTrue(layout.levelBadgeCenterY < baseRadius + layout.levelBadgeRadius)
-        assertTrue(layout.levelBadgeCenterY + layout.levelBadgeRadius > baseRadius)
+        assertTrue(layout.levelBadgeOffsetFromCenter > layout.unitsOffsetY)
+        assertTrue(layout.levelBadgeOffsetFromCenter < baseRadius + layout.levelBadgeRadius)
+        assertTrue(layout.levelBadgeOffsetFromCenter + layout.levelBadgeRadius > baseRadius)
         assertEquals(-(baseRadius + 16f), layout.selectedOffsetY, 0.001f)
     }
 
@@ -982,10 +1003,10 @@ class GameLogicTest {
 
         val layout = baseLabelLayout(smallRenderedRadius)
 
-        assertTrue(layout.levelBadgeCenterY > layout.unitsOffsetY)
+        assertTrue(layout.levelBadgeOffsetFromCenter > layout.unitsOffsetY)
         assertTrue(layout.levelBadgeRadius >= 7f)
-        assertTrue(layout.levelBadgeCenterY + layout.levelBadgeRadius > smallRenderedRadius)
-        assertTrue(layout.levelBadgeCenterY < smallRenderedRadius + layout.levelBadgeRadius)
+        assertTrue(layout.levelBadgeOffsetFromCenter + layout.levelBadgeRadius > smallRenderedRadius)
+        assertTrue(layout.levelBadgeOffsetFromCenter < smallRenderedRadius + layout.levelBadgeRadius)
     }
 
     @Test
@@ -998,7 +1019,7 @@ class GameLogicTest {
             labelLayout = layout
         )
 
-        assertEquals(300f + layout.levelBadgeCenterY, centerY, 0.001f)
+        assertEquals(300f + layout.levelBadgeOffsetFromCenter, centerY, 0.001f)
     }
 
     @Test

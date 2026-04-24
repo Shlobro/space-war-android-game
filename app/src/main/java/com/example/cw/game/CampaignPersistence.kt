@@ -6,8 +6,10 @@ private const val CAMPAIGN_SCHEMA_VERSION_KEY = "schema_version"
 private const val CAMPAIGN_COMPLETED_LEVELS_KEY = "completed_levels"
 private const val CAMPAIGN_STARS_BY_LEVEL_KEY = "stars_by_level"
 private const val CAMPAIGN_UPGRADE_POINTS_KEY = "upgrade_points"
+private const val CAMPAIGN_BONUS_STAR_CREDITS_KEY = "bonus_star_credits"
+private const val CAMPAIGN_SPENT_STARS_KEY = "spent_stars"
 private const val CAMPAIGN_CASH_RATE_LEVEL_KEY = "cash_rate_level"
-private const val CAMPAIGN_SCHEMA_VERSION = 1
+private const val CAMPAIGN_SCHEMA_VERSION = 2
 
 internal const val CAMPAIGN_PREFERENCES_NAME = "campaign_state"
 
@@ -17,6 +19,8 @@ internal fun loadCampaignState(preferences: SharedPreferences): CampaignState {
         completedLevels = preferences.getString(CAMPAIGN_COMPLETED_LEVELS_KEY, null),
         starsByLevel = preferences.getString(CAMPAIGN_STARS_BY_LEVEL_KEY, null),
         upgradePoints = preferences.getInt(CAMPAIGN_UPGRADE_POINTS_KEY, 0),
+        bonusStarCredits = preferences.getInt(CAMPAIGN_BONUS_STAR_CREDITS_KEY, 0),
+        spentStars = preferences.getInt(CAMPAIGN_SPENT_STARS_KEY, 0),
         cashRateLevel = preferences.getInt(CAMPAIGN_CASH_RATE_LEVEL_KEY, 0)
     )
 }
@@ -26,7 +30,9 @@ internal fun saveCampaignState(preferences: SharedPreferences, campaign: Campaig
         .putInt(CAMPAIGN_SCHEMA_VERSION_KEY, CAMPAIGN_SCHEMA_VERSION)
         .putString(CAMPAIGN_COMPLETED_LEVELS_KEY, encodeIntSet(campaign.completedLevels))
         .putString(CAMPAIGN_STARS_BY_LEVEL_KEY, encodeStarsByLevel(campaign.starsByLevel))
-        .putInt(CAMPAIGN_UPGRADE_POINTS_KEY, campaign.upgradePoints)
+        .putInt(CAMPAIGN_BONUS_STAR_CREDITS_KEY, campaign.bonusStarCredits)
+        .putInt(CAMPAIGN_SPENT_STARS_KEY, campaign.spentStars)
+        .remove(CAMPAIGN_UPGRADE_POINTS_KEY)
         .putInt(CAMPAIGN_CASH_RATE_LEVEL_KEY, campaign.cashRateLevel)
         .apply()
 }
@@ -36,22 +42,28 @@ internal fun decodeCampaignState(
     completedLevels: String?,
     starsByLevel: String?,
     upgradePoints: Int,
+    bonusStarCredits: Int,
+    spentStars: Int,
     cashRateLevel: Int
 ): CampaignState {
     if (!isSupportedCampaignSchemaVersion(schemaVersion)) {
         return CampaignState()
     }
 
+    val migratedBonusStars = if (schemaVersion == 0 || schemaVersion == 1) 0 else bonusStarCredits.coerceAtLeast(0)
+    val migratedSpentStars = if (schemaVersion == 0 || schemaVersion == 1) 0 else spentStars.coerceAtLeast(0)
+
     return CampaignState(
         completedLevels = decodeIntSet(completedLevels),
         starsByLevel = decodeStarsByLevel(starsByLevel),
-        upgradePoints = upgradePoints.coerceAtLeast(0),
+        bonusStarCredits = migratedBonusStars,
+        spentStars = migratedSpentStars,
         cashRateLevel = cashRateLevel.coerceAtLeast(0)
     )
 }
 
 internal fun isSupportedCampaignSchemaVersion(schemaVersion: Int): Boolean {
-    return schemaVersion == 0 || schemaVersion == CAMPAIGN_SCHEMA_VERSION
+    return schemaVersion in 0..CAMPAIGN_SCHEMA_VERSION
 }
 
 internal fun encodeIntSet(values: Set<Int>): String {

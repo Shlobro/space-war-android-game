@@ -26,17 +26,19 @@ internal data class MatchState(
     val elapsedSeconds: Float,
     val isPaused: Boolean,
     val earnedStars: Int = 0,
-    val improvedBestStars: Boolean = false,
-    val earnedUpgradePoint: Boolean = false
+    val earnedStarReward: Int = 0,
+    val improvedBestStars: Boolean = false
 )
 
 internal data class CampaignState(
     val completedLevels: Set<Int> = emptySet(),
     val starsByLevel: Map<Int, Int> = emptyMap(),
-    val upgradePoints: Int = 0,
+    val bonusStarCredits: Int = 0,
+    val spentStars: Int = 0,
     val cashRateLevel: Int = 0
 ) {
     val totalStars: Int get() = starsByLevel.values.sum()
+    val availableStars: Int get() = (totalStars + bonusStarCredits - spentStars).coerceAtLeast(0)
 
     fun cashIncomeMultiplier(): Float = 1f + cashRateLevel * 0.25f
 
@@ -49,9 +51,15 @@ internal data class CampaignState(
         val completed = levelId in completedLevels
         return copy(
             completedLevels = completedLevels + levelId,
-            starsByLevel = starsByLevel + (levelId to bestStars),
-            upgradePoints = if (completed) upgradePoints else upgradePoints + 1
+            starsByLevel = starsByLevel + (levelId to bestStars)
         )
+    }
+
+    fun spendStars(cost: Int): CampaignState {
+        require(cost >= 0) { "cost must be non-negative" }
+        if (cost == 0) return this
+        require(availableStars >= cost) { "Not enough stars to spend $cost" }
+        return copy(spentStars = spentStars + cost)
     }
 }
 
