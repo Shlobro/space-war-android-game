@@ -41,11 +41,6 @@ internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
         }
     }
-    val selectedPaint = remember(density) {
-        Paint(labelPaint).apply {
-            textSize = with(density) { 10.sp.toPx() }
-        }
-    }
     val fleetPaint = remember(density) {
         Paint().apply {
             color = android.graphics.Color.WHITE
@@ -62,7 +57,7 @@ internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
         state.bases.forEach { base -> drawBaseAura(base, base.id in state.selectedBaseIds, state) }
         drawFleetTrails(state)
         state.bases.forEach { base ->
-            drawBase(base, labelPaint, levelPaint, selectedPaint, base.id in state.selectedBaseIds, state)
+            drawBase(base, labelPaint, levelPaint, base.id in state.selectedBaseIds, state)
         }
         state.fleets.forEach { fleet -> drawFleet(fleet, fleetPaint, state) }
     }
@@ -132,7 +127,6 @@ private fun DrawScope.drawBase(
     base: BaseState,
     labelPaint: Paint,
     levelPaint: Paint,
-    selectedPaint: Paint,
     selected: Boolean,
     state: MatchState
 ) {
@@ -211,14 +205,6 @@ private fun DrawScope.drawBase(
         levelBadgeCenterY + (levelPaint.textSize * LEVEL_BADGE_TEXT_BASELINE_OFFSET_RATIO),
         levelPaint
     )
-    if (selected) {
-        drawContext.canvas.nativeCanvas.drawText(
-            "SELECTED",
-            center.x,
-            center.y + labelLayout.selectedOffsetY,
-            selectedPaint
-        )
-    }
 }
 
 private fun DrawScope.drawFleetTrails(state: MatchState) {
@@ -267,8 +253,7 @@ private fun DrawScope.drawFleet(fleet: FleetState, fleetPaint: Paint, state: Mat
 internal data class BaseLabelLayout(
     val unitsOffsetY: Float,
     val levelBadgeOffsetFromCenter: Float,
-    val levelBadgeRadius: Float,
-    val selectedOffsetY: Float
+    val levelBadgeRadius: Float
 )
 
 internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
@@ -278,8 +263,7 @@ internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
     return BaseLabelLayout(
         unitsOffsetY = unitsOffsetY,
         levelBadgeOffsetFromCenter = levelBadgeOffsetFromCenter,
-        levelBadgeRadius = levelBadgeRadius,
-        selectedOffsetY = -baseRadius - 16f
+        levelBadgeRadius = levelBadgeRadius
     )
 }
 

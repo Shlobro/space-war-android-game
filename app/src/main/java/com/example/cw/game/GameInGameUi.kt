@@ -1,5 +1,9 @@
 package com.example.cw.game
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,6 +31,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,7 +42,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -59,9 +66,18 @@ import kotlin.math.roundToInt
 
 internal const val UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP = 104
 internal const val UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP = 40
+private const val UPGRADE_ANIMATION_DURATION_MS = 650
+private const val UPGRADE_ANIMATION_START_RADIUS_BOOST_DP = 6
+private const val UPGRADE_ANIMATION_END_RADIUS_BOOST_DP = 24
+private const val UPGRADE_ANIMATION_STROKE_WIDTH_DP = 4
 
 internal data class InGameHudSummary(
     val fundsLabel: String
+)
+
+internal data class UpgradeAnimationState(
+    val position: Offset,
+    val radius: Float
 )
 
 @Composable
@@ -345,14 +361,14 @@ internal fun UpgradeNodeButton(
 ) {
     if (viewportSize == IntSize.Zero) return
 
-    val base = selectedUpgradablePlayerBase(state) ?: return
+    val selectedBase = selectedSinglePlayerBase(state)
+    val base = selectedBase?.takeIf { it.capLevel < it.maxLevel }
     val canvasSize = Size(viewportSize.width.toFloat(), viewportSize.height.toFloat())
-    val center = worldToScreen(base.position, canvasSize, state.worldBounds)
-    val radius = base.radius * scale(canvasSize, state.worldBounds)
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
-    val cost = upgradeCost(base)
-    val canAfford = state.playerMoney >= cost
+    val animationProgress = remember { Animatable(1f) }
+    var previousSelectedBase by remember { mutableStateOf<BaseState?>(null) }
+    var activeUpgradeAnimation by remember { mutableStateOf<UpgradeAnimationState?>(null) }
     var measuredButtonSize by remember { mutableStateOf(IntSize.Zero) }
     val fallbackButtonSize = with(density) {
         IntSize(
@@ -370,37 +386,105 @@ internal fun UpgradeNodeButton(
             bottom = safeDrawingPadding.calculateBottomPadding().toPx().roundToInt()
         )
     }
-    val buttonOffset = upgradeNodeButtonOffset(
-        center = center,
-        radius = radius,
-        viewportSize = viewportSize,
-        buttonSize = buttonSize,
-        baseMarginPx = with(density) { 8.dp.toPx().roundToInt() },
-        horizontalGapPx = with(density) { 6.dp.toPx().roundToInt() },
-        verticalGapPx = with(density) { 4.dp.toPx().roundToInt() },
-        edgeInsets = safeAreaInsets
-    )
+
+    LaunchedEffect(selectedBase?.id, selectedBase?.capLevel) {
+        val upgradedBase = upgradeAnimationBase(previousSelectedBase, selectedBase)
+        try {
+            runUpgradeAnimation(
+                upgradedBase = upgradedBase,
+                onAnimationStart = { animation ->
+                    activeUpgradeAnimation = animation
+                    animationProgress.snapTo(0f)
+                },
+                animateProgress = {
+                    animationProgress.animateTo(
+                        targetValue = 1f,
+                        animationSpec = tween(
+                            durationMillis = UPGRADE_ANIMATION_DURATION_MS,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
+                },
+                onAnimationFinish = { activeUpgradeAnimation = null }
+            )
+        } finally {
+            previousSelectedBase = selectedBase
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .offset { buttonOffset }
-                .zIndex(2f)
-                .widthIn(min = 64.dp)
-                .heightIn(min = 40.dp)
-                .background(
-                    color = if (canAfford) AccentGold else Color(0xFF6C5A2B),
-                    shape = RoundedCornerShape(50)
+        activeUpgradeAnimation?.let { animation ->
+            val animationProgressValue = animationProgress.value
+            val animatedRadius = animation.radius * scale(canvasSize, state.worldBounds) + with(density) {
+                lerpDp(
+                    start = UPGRADE_ANIMATION_START_RADIUS_BOOST_DP,
+                    end = UPGRADE_ANIMATION_END_RADIUS_BOOST_DP,
+                    progress = animationProgressValue
+                ).dp.toPx()
+            }
+            val strokeWidth = with(density) { UPGRADE_ANIMATION_STROKE_WIDTH_DP.dp.toPx() }
+            val animationCenter = worldToScreen(animation.position, canvasSize, state.worldBounds)
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(1f)
+            ) {
+                drawCircle(
+                    color = AccentGold.copy(alpha = 0.18f * (1f - animationProgressValue)),
+                    radius = animatedRadius,
+                    center = animationCenter
                 )
-                .onSizeChanged { measuredButtonSize = it }
-                .graphicsLayer { alpha = if (measuredButtonSize == IntSize.Zero) 0f else 1f }
-                .clickable(enabled = measuredButtonSize != IntSize.Zero) { onUpgrade(base.id) }
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("$", color = Color(0xFF102132), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(formatFunds(cost), color = Color(0xFF102132), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                drawArc(
+                    color = AccentGold.copy(alpha = 0.95f - animationProgressValue * 0.35f),
+                    startAngle = -90f,
+                    sweepAngle = 360f * animationProgressValue,
+                    useCenter = false,
+                    topLeft = Offset(
+                        x = animationCenter.x - animatedRadius,
+                        y = animationCenter.y - animatedRadius
+                    ),
+                    size = Size(animatedRadius * 2f, animatedRadius * 2f),
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+            }
+        }
+
+        if (base != null) {
+            val center = worldToScreen(base.position, canvasSize, state.worldBounds)
+            val radius = base.radius * scale(canvasSize, state.worldBounds)
+            val cost = upgradeCost(base)
+            val canAfford = state.playerMoney >= cost
+            val buttonOffset = upgradeNodeButtonOffset(
+                center = center,
+                radius = radius,
+                viewportSize = viewportSize,
+                buttonSize = buttonSize,
+                baseMarginPx = with(density) { 8.dp.toPx().roundToInt() },
+                horizontalGapPx = with(density) { 6.dp.toPx().roundToInt() },
+                verticalGapPx = with(density) { 4.dp.toPx().roundToInt() },
+                edgeInsets = safeAreaInsets
+            )
+
+            Row(
+                modifier = Modifier
+                    .offset { buttonOffset }
+                    .zIndex(2f)
+                    .widthIn(min = 64.dp)
+                    .heightIn(min = 40.dp)
+                    .background(
+                        color = if (canAfford) AccentGold else Color(0xFF6C5A2B),
+                        shape = RoundedCornerShape(50)
+                    )
+                    .onSizeChanged { measuredButtonSize = it }
+                    .graphicsLayer { alpha = if (measuredButtonSize == IntSize.Zero) 0f else 1f }
+                    .clickable(enabled = measuredButtonSize != IntSize.Zero) { onUpgrade(base.id) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("$", color = Color(0xFF102132), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(formatFunds(cost), color = Color(0xFF102132), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
         }
     }
 }
@@ -436,10 +520,41 @@ internal fun upgradeNodeButtonOffset(
 }
 
 internal fun selectedUpgradablePlayerBase(state: MatchState): BaseState? {
+    val base = selectedSinglePlayerBase(state) ?: return null
+    return base.takeIf { it.capLevel < it.maxLevel }
+}
+
+internal fun selectedSinglePlayerBase(state: MatchState): BaseState? {
     if (state.selectedBaseIds.size != 1) return null
     val selectedBaseId = state.selectedBaseIds.first()
-    val base = state.bases.firstOrNull { it.id == selectedBaseId && it.owner == Owner.PLAYER } ?: return null
-    return base.takeIf { it.capLevel < it.maxLevel }
+    return state.bases.firstOrNull { it.id == selectedBaseId && it.owner == Owner.PLAYER }
+}
+
+internal fun upgradeAnimationBase(previousBase: BaseState?, currentBase: BaseState?): BaseState? {
+    if (previousBase == null || currentBase == null) return null
+    if (previousBase.id != currentBase.id) return null
+    return currentBase.takeIf { it.capLevel > previousBase.capLevel }
+}
+
+internal suspend fun runUpgradeAnimation(
+    upgradedBase: BaseState?,
+    onAnimationStart: suspend (UpgradeAnimationState) -> Unit,
+    animateProgress: suspend () -> Unit,
+    onAnimationFinish: () -> Unit
+) {
+    try {
+        if (upgradedBase != null) {
+            onAnimationStart(
+                UpgradeAnimationState(
+                    position = upgradedBase.position,
+                    radius = upgradedBase.radius
+                )
+            )
+            animateProgress()
+        }
+    } finally {
+        onAnimationFinish()
+    }
 }
 
 internal fun inGameHudSummary(state: MatchState): InGameHudSummary {
@@ -461,4 +576,8 @@ internal fun formatStars(stars: Int): String {
         repeat(filled) { append('★') }
         repeat(3 - filled) { append('☆') }
     }
+}
+
+private fun lerpDp(start: Int, end: Int, progress: Float): Float {
+    return start + (end - start) * progress.coerceIn(0f, 1f)
 }

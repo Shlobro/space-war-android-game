@@ -994,7 +994,6 @@ class GameLogicTest {
         assertTrue(layout.levelBadgeOffsetFromCenter > layout.unitsOffsetY)
         assertTrue(layout.levelBadgeOffsetFromCenter < baseRadius + layout.levelBadgeRadius)
         assertTrue(layout.levelBadgeOffsetFromCenter + layout.levelBadgeRadius > baseRadius)
-        assertEquals(-(baseRadius + 16f), layout.selectedOffsetY, 0.001f)
     }
 
     @Test
