@@ -5,7 +5,6 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,6 +47,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -159,25 +158,19 @@ private fun FundsHudReadout(content: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun HudActionChip(icon: String, contentDescription: String, onTap: () -> Unit) {
-    Card(
-        onClick = onTap,
-        colors = CardDefaults.cardColors(containerColor = Color(0xCCF6CB7D)),
-        shape = RoundedCornerShape(18.dp),
+    Box(
         modifier = Modifier
             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-            .semantics { this.contentDescription = contentDescription }
+            .clickable(role = Role.Button, onClick = onTap)
+            .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = icon,
-                color = Color(0xFF102132),
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
-        }
+        Text(
+            text = icon,
+            color = AccentGold,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+        )
     }
 }
 
