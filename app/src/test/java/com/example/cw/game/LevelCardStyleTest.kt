@@ -1,6 +1,7 @@
 package com.example.cw.game
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -9,46 +10,62 @@ class LevelCardStyleTest {
 
     @Test
     fun levelCardPalette_completedUsesBrightReadableColors() {
-        val palette = levelCardPalette(unlocked = false, completed = true)
+        val palette = levelCardPalette(LevelCardState.COMPLETED)
 
         assertEquals(TextPrimary, palette.titleColor)
         assertEquals(AccentGreen, palette.statusTextColor)
+        assertEquals(1.sp, palette.statusLetterSpacing)
         assertTrue(relativeLuminance(palette.descriptionColor) > relativeLuminance(TextSecond))
     }
 
     @Test
     fun levelCardPalette_unlockedKeepsDescriptionBrighterThanDefaultSecondaryText() {
-        val palette = levelCardPalette(unlocked = true, completed = false)
+        val palette = levelCardPalette(LevelCardState.AVAILABLE)
 
         assertEquals(TextPrimary, palette.titleColor)
         assertEquals(AccentCyan, palette.statusTextColor)
+        assertEquals(1.sp, palette.statusLetterSpacing)
         assertTrue(relativeLuminance(palette.descriptionColor) > relativeLuminance(TextSecond))
     }
 
     @Test
     fun levelCardPalette_lockedKeepsTextReadableAgainstLockedBackground() {
-        val palette = levelCardPalette(unlocked = false, completed = false)
+        val palette = levelCardPalette(LevelCardState.LOCKED)
         val titleContrast = contrastRatio(palette.titleColor, palette.backgroundTop)
         val descriptionContrast = contrastRatio(palette.descriptionColor, palette.backgroundTop)
 
         assertTrue(titleContrast >= 4.5f)
         assertTrue(descriptionContrast >= 3f)
+        assertEquals(0.5.sp, palette.statusLetterSpacing)
     }
 
     @Test
     fun levelCardStatusText_matchesCompletionAndUnlockState() {
         assertEquals(
             "COMPLETED",
-            levelCardStatusText(unlockAfterLevelId = 2, unlocked = true, completed = true)
+            levelCardStatusText(state = LevelCardState.COMPLETED, unlockAfterLevelId = 2)
         )
         assertEquals(
             "AVAILABLE",
-            levelCardStatusText(unlockAfterLevelId = 2, unlocked = true, completed = false)
+            levelCardStatusText(state = LevelCardState.AVAILABLE, unlockAfterLevelId = 2)
         )
         assertEquals(
             "LOCKED - Complete Mission 2",
-            levelCardStatusText(unlockAfterLevelId = 2, unlocked = false, completed = false)
+            levelCardStatusText(state = LevelCardState.LOCKED, unlockAfterLevelId = 2)
         )
+    }
+
+    @Test
+    fun levelCardStatusText_lockedWithoutPrerequisiteFallsBackToGenericLabel() {
+        assertEquals(
+            "LOCKED",
+            levelCardStatusText(state = LevelCardState.LOCKED, unlockAfterLevelId = null)
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun levelCardState_rejectsCompletedWithoutUnlockedState() {
+        levelCardState(unlocked = false, completed = true)
     }
 
     private fun relativeLuminance(color: Color): Float {

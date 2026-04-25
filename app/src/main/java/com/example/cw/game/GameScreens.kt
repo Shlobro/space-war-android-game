@@ -205,11 +205,11 @@ private fun LevelCard(
     val unlocked = isLevelUnlocked(level, campaign)
     val stars = campaign.starsForLevel(level.levelId)
     val completed = level.levelId in campaign.completedLevels
-    val palette = levelCardPalette(unlocked = unlocked, completed = completed)
+    val state = levelCardState(unlocked = unlocked, completed = completed)
+    val palette = levelCardPalette(state)
     val statusText = levelCardStatusText(
-        unlockAfterLevelId = level.unlockAfterLevelId,
-        unlocked = unlocked,
-        completed = completed
+        state = state,
+        unlockAfterLevelId = level.unlockAfterLevelId
     )
 
     Box(
@@ -284,7 +284,7 @@ private fun LevelCard(
                         color = palette.statusTextColor,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = if (unlocked || completed) 1.sp else 0.5.sp
+                        letterSpacing = palette.statusLetterSpacing
                     )
                 }
 

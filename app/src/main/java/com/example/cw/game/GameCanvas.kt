@@ -19,10 +19,14 @@ import androidx.compose.ui.unit.sp
 private const val LEVEL_BADGE_EDGE_OVERLAP_RATIO = 0.15f
 private const val LEVEL_BADGE_VIEWPORT_MARGIN_PX = 2f
 private const val LEVEL_BADGE_TEXT_BASELINE_OFFSET_RATIO = 0.33f
+// Keeps the numeral visually close to the badge diameter without touching the border.
+private const val LEVEL_BADGE_TEXT_SIZE_RATIO = 1.18f
 
 @Composable
 internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
     val density = LocalDensity.current
+    val minLevelBadgeTextSizePx = with(density) { 10.sp.toPx() }
+    val maxLevelBadgeTextSizePx = with(density) { 15.sp.toPx() }
     val labelPaint = remember(density) {
         Paint().apply {
             color = android.graphics.Color.WHITE
@@ -57,7 +61,15 @@ internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
         state.bases.forEach { base -> drawBaseAura(base, base.id in state.selectedBaseIds, state) }
         drawFleetTrails(state)
         state.bases.forEach { base ->
-            drawBase(base, labelPaint, levelPaint, base.id in state.selectedBaseIds, state)
+            drawBase(
+                base = base,
+                labelPaint = labelPaint,
+                levelPaint = levelPaint,
+                minLevelBadgeTextSizePx = minLevelBadgeTextSizePx,
+                maxLevelBadgeTextSizePx = maxLevelBadgeTextSizePx,
+                selected = base.id in state.selectedBaseIds,
+                state = state
+            )
         }
         state.fleets.forEach { fleet -> drawFleet(fleet, fleetPaint, state) }
     }
@@ -127,6 +139,8 @@ private fun DrawScope.drawBase(
     base: BaseState,
     labelPaint: Paint,
     levelPaint: Paint,
+    minLevelBadgeTextSizePx: Float,
+    maxLevelBadgeTextSizePx: Float,
     selected: Boolean,
     state: MatchState
 ) {
@@ -138,6 +152,8 @@ private fun DrawScope.drawBase(
         canvasHeight = size.height,
         labelLayout = labelLayout
     )
+    // This paint instance is reused across bases, so the badge text size must be reset per draw call.
+    levelPaint.textSize = levelBadgeTextSize(labelLayout, minLevelBadgeTextSizePx, maxLevelBadgeTextSizePx)
     val fillColor = base.owner.color
 
     if (base.type == BaseType.FAST) {
@@ -195,7 +211,7 @@ private fun DrawScope.drawBase(
         color = if (selected) Color(0xFFF6CB7D) else Color.White.copy(alpha = 0.92f),
         radius = labelLayout.levelBadgeRadius,
         center = Offset(center.x, levelBadgeCenterY),
-        style = Stroke(width = 2f)
+        style = Stroke(width = labelLayout.levelBadgeStrokeWidth)
     )
     drawContext.canvas.nativeCanvas.drawText(
         base.capLevel.toString(),
@@ -253,18 +269,30 @@ private fun DrawScope.drawFleet(fleet: FleetState, fleetPaint: Paint, state: Mat
 internal data class BaseLabelLayout(
     val unitsOffsetY: Float,
     val levelBadgeOffsetFromCenter: Float,
-    val levelBadgeRadius: Float
+    val levelBadgeRadius: Float,
+    val levelBadgeStrokeWidth: Float
 )
 
 internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
     val unitsOffsetY = (baseRadius * 0.08f).coerceIn(2f, 5f)
-    val levelBadgeRadius = (baseRadius * 0.28f).coerceIn(7f, 12f)
+    val levelBadgeRadius = (baseRadius * 0.31f).coerceIn(8f, 13.5f)
     val levelBadgeOffsetFromCenter = baseRadius - (levelBadgeRadius * LEVEL_BADGE_EDGE_OVERLAP_RATIO)
+    val levelBadgeStrokeWidth = (levelBadgeRadius * 0.22f).coerceIn(2f, 3f)
     return BaseLabelLayout(
         unitsOffsetY = unitsOffsetY,
         levelBadgeOffsetFromCenter = levelBadgeOffsetFromCenter,
-        levelBadgeRadius = levelBadgeRadius
+        levelBadgeRadius = levelBadgeRadius,
+        levelBadgeStrokeWidth = levelBadgeStrokeWidth
     )
+}
+
+internal fun levelBadgeTextSize(
+    labelLayout: BaseLabelLayout,
+    minTextSizePx: Float,
+    maxTextSizePx: Float
+): Float {
+    return (labelLayout.levelBadgeRadius * LEVEL_BADGE_TEXT_SIZE_RATIO)
+        .coerceIn(minTextSizePx, maxTextSizePx)
 }
 
 internal fun resolveLevelBadgeCenterY(
