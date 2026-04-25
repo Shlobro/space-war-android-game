@@ -5,8 +5,18 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import com.example.cw.game.levels.LevelDefinition
 import com.example.cw.game.levels.WorldBounds
+import java.util.PriorityQueue
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sin
+
+private const val ROUTE_COLLISION_PADDING = 34f
+private const val ROUTE_WAYPOINT_PADDING = 64f
+private const val ROUTE_RING_POINT_COUNT = 16
+private const val ROUTE_WORLD_SIDE_MARGIN = 80f
+private const val ROUTE_WORLD_VERTICAL_MARGIN = 120f
 
 internal fun createMatch(level: LevelDefinition): MatchState {
     return MatchState(
@@ -55,49 +65,135 @@ internal fun buildRoute(
     obstacles: List<Obstacle>,
     worldBounds: WorldBounds
 ): List<Offset> {
-    var route = listOf(start, end)
-    repeat(3) {
-        val obstacle = obstacles.firstOrNull { current ->
-            route.zipWithNext().any { (a, b) -> segmentHitsCircle(a, b, current.position, current.radius + 34f) }
-        } ?: return@repeat
-
-        val newRoute = mutableListOf<Offset>()
-        route.zipWithNext().forEach { (a, b) ->
-            newRoute += a
-            if (segmentHitsCircle(a, b, obstacle.position, obstacle.radius + 34f)) {
-                newRoute += computeDetourPoint(a, b, obstacle, worldBounds)
-            }
+    if (obstacles.none { obstacle ->
+            segmentHitsCircle(start, end, obstacle.position, obstacle.radius + ROUTE_COLLISION_PADDING)
         }
-        newRoute += route.last()
-        route = newRoute.distinctBy { "${it.x.roundKey()}-${it.y.roundKey()}" }
+    ) {
+        return listOf(end)
     }
-    return route.drop(1)
+
+    val nodes = buildList {
+        add(RouteNode(start))
+        add(RouteNode(end))
+        obstacles.forEachIndexed { obstacleIndex, obstacle ->
+            addAll(buildRouteRing(obstacleIndex, obstacle, worldBounds))
+        }
+    }
+    val graph = Array(nodes.size) { mutableListOf<RouteEdge>() }
+    for (i in nodes.indices) {
+        for (j in i + 1 until nodes.size) {
+            if (!canConnect(nodes[i], nodes[j], obstacles)) {
+                continue
+            }
+            val distance = distance(nodes[i].position, nodes[j].position)
+            graph[i] += RouteEdge(j, distance)
+            graph[j] += RouteEdge(i, distance)
+        }
+    }
+
+    val nodePath = shortestPath(graph, nodes.size)
+    if (nodePath.isEmpty()) {
+        return listOf(end)
+    }
+    return nodePath.drop(1).map { nodes[it].position }
 }
 
-private fun computeDetourPoint(
-    start: Offset,
-    end: Offset,
+private fun buildRouteRing(
+    obstacleIndex: Int,
     obstacle: Obstacle,
     worldBounds: WorldBounds
-): Offset {
-    val center = obstacle.position
-    val padding = obstacle.radius + 58f
-    val toStart = normalize(start - center)
-    val toEnd = normalize(end - center)
-    val candidateA = center + normalize(toStart + toEnd).rotate90() * padding
-    val candidateB = center + normalize(toStart + toEnd).rotateMinus90() * padding
+): List<RouteNode> {
+    val radius = obstacle.radius + ROUTE_WAYPOINT_PADDING
+    return List(ROUTE_RING_POINT_COUNT) { ringIndex ->
+        val angle = 2.0 * PI * ringIndex / ROUTE_RING_POINT_COUNT
+        val rawPoint = Offset(
+            x = obstacle.position.x + (cos(angle) * radius).toFloat(),
+            y = obstacle.position.y + (sin(angle) * radius).toFloat()
+        )
+        RouteNode(
+            position = clampToWorld(rawPoint, worldBounds),
+            obstacleIndex = obstacleIndex,
+            ringIndex = ringIndex
+        )
+    }
+}
 
-    val routeA = distance(start, candidateA) + distance(candidateA, end)
-    val routeB = distance(start, candidateB) + distance(candidateB, end)
-    val chosen = if (routeA <= routeB) candidateA else candidateB
+private fun canConnect(
+    from: RouteNode,
+    to: RouteNode,
+    obstacles: List<Obstacle>
+): Boolean {
+    if (from.obstacleIndex != null && from.obstacleIndex == to.obstacleIndex) {
+        if (!areNeighboringRingNodes(from, to)) {
+            return false
+        }
+    }
 
+    return obstacles.none { obstacle ->
+        segmentHitsCircle(
+            from.position,
+            to.position,
+            obstacle.position,
+            obstacle.radius + ROUTE_COLLISION_PADDING
+        )
+    }
+}
+
+private fun areNeighboringRingNodes(a: RouteNode, b: RouteNode): Boolean {
+    val first = a.ringIndex ?: return false
+    val second = b.ringIndex ?: return false
+    val delta = kotlin.math.abs(first - second)
+    return delta == 1 || delta == ROUTE_RING_POINT_COUNT - 1
+}
+
+private fun shortestPath(graph: Array<MutableList<RouteEdge>>, nodeCount: Int): List<Int> {
+    val distances = FloatArray(nodeCount) { Float.POSITIVE_INFINITY }
+    val previous = IntArray(nodeCount) { -1 }
+    val queue = PriorityQueue(compareBy<RouteState> { it.distance })
+
+    distances[0] = 0f
+    queue += RouteState(index = 0, distance = 0f)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.remove()
+        if (current.distance > distances[current.index]) {
+            continue
+        }
+        if (current.index == 1) {
+            break
+        }
+        graph[current.index].forEach { edge ->
+            val nextDistance = current.distance + edge.distance
+            if (nextDistance >= distances[edge.to]) {
+                return@forEach
+            }
+            distances[edge.to] = nextDistance
+            previous[edge.to] = current.index
+            queue += RouteState(index = edge.to, distance = nextDistance)
+        }
+    }
+
+    if (distances[1] == Float.POSITIVE_INFINITY) {
+        return emptyList()
+    }
+
+    val path = mutableListOf<Int>()
+    var cursor = 1
+    while (cursor != -1) {
+        path += cursor
+        cursor = previous[cursor]
+    }
+    return path.asReversed()
+}
+
+private fun clampToWorld(point: Offset, worldBounds: WorldBounds): Offset {
     return Offset(
-        chosen.x.coerceIn(80f, worldBounds.width - 80f),
-        chosen.y.coerceIn(120f, worldBounds.height - 120f)
+        point.x.coerceIn(ROUTE_WORLD_SIDE_MARGIN, worldBounds.width - ROUTE_WORLD_SIDE_MARGIN),
+        point.y.coerceIn(ROUTE_WORLD_VERTICAL_MARGIN, worldBounds.height - ROUTE_WORLD_VERTICAL_MARGIN)
     )
 }
 
-private fun segmentHitsCircle(a: Offset, b: Offset, center: Offset, radius: Float): Boolean {
+internal fun segmentHitsCircle(a: Offset, b: Offset, center: Offset, radius: Float): Boolean {
     val ab = b - a
     val t = (((center - a).x * ab.x) + ((center - a).y * ab.y)) /
         max(0.0001f, ab.x * ab.x + ab.y * ab.y)
@@ -121,11 +217,6 @@ internal fun worldToScreen(offset: Offset, canvasSize: Size, worldBounds: WorldB
 
 internal fun distance(a: Offset, b: Offset): Float = (a - b).getDistance()
 
-private fun normalize(offset: Offset): Offset {
-    val value = offset.getDistance()
-    return if (value <= 0.0001f) Offset(1f, 0f) else offset / value
-}
-
 internal fun diamondPath(center: Offset, radius: Float): Path {
     return Path().apply {
         moveTo(center.x, center.y - radius)
@@ -146,8 +237,18 @@ internal fun arrowPath(center: Offset, radius: Float): Path {
     }
 }
 
-private fun Offset.rotate90(): Offset = Offset(-y, x)
+private data class RouteNode(
+    val position: Offset,
+    val obstacleIndex: Int? = null,
+    val ringIndex: Int? = null
+)
 
-private fun Offset.rotateMinus90(): Offset = Offset(y, -x)
+private data class RouteEdge(
+    val to: Int,
+    val distance: Float
+)
 
-private fun Float.roundKey(): Int = (this * 10).toInt()
+private data class RouteState(
+    val index: Int,
+    val distance: Float
+)

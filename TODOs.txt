@@ -1,1 +1,0 @@
-currently obsticles effect pathing in a weird way. but the units are definately not avoiding the visual obsacles. 
