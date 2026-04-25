@@ -65,7 +65,7 @@ import kotlin.math.roundToInt
 
 internal const val UPGRADE_NODE_BUTTON_FALLBACK_WIDTH_DP = 104
 internal const val UPGRADE_NODE_BUTTON_FALLBACK_HEIGHT_DP = 40
-private const val UPGRADE_ANIMATION_DURATION_MS = 650
+private const val UPGRADE_ANIMATION_DURATION_MS = 5_000
 private const val UPGRADE_ANIMATION_START_RADIUS_BOOST_DP = 6
 private const val UPGRADE_ANIMATION_END_RADIUS_BOOST_DP = 24
 private const val UPGRADE_ANIMATION_STROKE_WIDTH_DP = 4

@@ -4,6 +4,4 @@ text on the level cards is not readable on that background.
 
 the number on the nodes showing the level of the node is not clear might be too small
 
-upgrading should take like 5 seconds.
-
 no need for the background around the pause button. get rid of it.
