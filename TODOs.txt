@@ -1,5 +1,3 @@
 currently obsticles effect pathing in a weird way. but the units are definately not avoiding the visual obsacles. 
 
-text on the level cards is not readable on that background.
-
 the number on the nodes showing the level of the node is not clear might be too small

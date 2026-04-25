@@ -205,19 +205,23 @@ private fun LevelCard(
     val unlocked = isLevelUnlocked(level, campaign)
     val stars = campaign.starsForLevel(level.levelId)
     val completed = level.levelId in campaign.completedLevels
-
-    val borderColor = when {
-        completed -> AccentCyan.copy(alpha = 0.35f)
-        unlocked -> BorderGlow
-        else -> BorderDim
-    }
+    val palette = levelCardPalette(unlocked = unlocked, completed = completed)
+    val statusText = levelCardStatusText(
+        unlockAfterLevelId = level.unlockAfterLevelId,
+        unlocked = unlocked,
+        completed = completed
+    )
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(BgCard)
-            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(palette.backgroundTop, palette.backgroundBottom)
+                )
+            )
+            .border(1.dp, palette.borderColor, RoundedCornerShape(12.dp))
     ) {
         Box(
             modifier = Modifier
@@ -226,7 +230,7 @@ private fun LevelCard(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            if (completed) AccentCyan else if (unlocked) BorderGlow else BorderDim,
+                            palette.stripeColor,
                             Color.Transparent
                         )
                     )
@@ -245,7 +249,7 @@ private fun LevelCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = level.name.uppercase(),
-                        color = if (unlocked) TextPrimary else TextSecond,
+                        color = palette.titleColor,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.5.sp
@@ -253,7 +257,7 @@ private fun LevelCard(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = level.description,
-                        color = TextSecond,
+                        color = palette.descriptionColor,
                         fontSize = 12.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -268,27 +272,19 @@ private fun LevelCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                when {
-                    completed -> Text(
-                        "COMPLETED",
-                        color = AccentGreen,
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(palette.statusContainerColor)
+                        .border(1.dp, palette.statusBorderColor, RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = statusText,
+                        color = palette.statusTextColor,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-
-                    unlocked -> Text(
-                        "AVAILABLE",
-                        color = AccentCyan,
-                        fontSize = 11.sp,
-                        letterSpacing = 1.sp
-                    )
-
-                    else -> Text(
-                        "LOCKED - Complete Mission ${level.unlockAfterLevelId}",
-                        color = TextDim,
-                        fontSize = 11.sp,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = if (unlocked || completed) 1.sp else 0.5.sp
                     )
                 }
 

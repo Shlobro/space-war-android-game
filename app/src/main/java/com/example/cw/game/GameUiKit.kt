@@ -47,6 +47,12 @@ internal val HudFundsBadgeBorder = Color(0x66FFF0B0)
 internal val HudFundsBadgeText = Color(0xFF4B3300)
 internal val HudFundsLabelText = Color(0xFFE8C45A)
 internal val HudFundsValueText = Color(0xFFFFE28A)
+internal val LevelCardCompletedTop = Color(0xFF133247)
+internal val LevelCardCompletedBottom = Color(0xFF0A1D2D)
+internal val LevelCardUnlockedTop = Color(0xFF112A3C)
+internal val LevelCardUnlockedBottom = Color(0xFF0B1C2B)
+internal val LevelCardLockedTop = Color(0xFF0B1620)
+internal val LevelCardLockedBottom = Color(0xFF07111A)
 
 internal val SpaceBg = Brush.verticalGradient(listOf(BgDeep, BgMid, Color(0xFF0A2331)))
 
