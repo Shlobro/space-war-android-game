@@ -38,24 +38,7 @@ internal fun onScreenTap(
                 return state.copy(selectedBaseIds = emptySet())
             }
 
-            var updatedState = state
-            var launchedCount = 0
-            selectedSources.forEach { source ->
-                val beforeFleetCount = updatedState.fleets.size
-                updatedState = sendFleet(updatedState, source.id, tappedBase.id, Owner.PLAYER)
-                if (updatedState.fleets.size > beforeFleetCount) {
-                    launchedCount += 1
-                }
-            }
-            return updatedState.copy(
-                selectedBaseIds = emptySet(),
-                message = if (launchedCount > 0) {
-                    "Reinforced from $launchedCount bases"
-                } else {
-                    "Not enough ships to send"
-                },
-                messageExpiresAtSeconds = null
-            )
+            return launchFromSelectedBases(state, selectedSources, tappedBase.id)
         }
 
         val nextSelected = if (tappedBase.id in state.selectedBaseIds) {
@@ -82,24 +65,7 @@ internal fun onScreenTap(
         return state.copy(selectedBaseIds = emptySet())
     }
 
-    var updatedState = state
-    var launchedCount = 0
-    selectedSources.forEach { source ->
-        val beforeFleetCount = updatedState.fleets.size
-        updatedState = sendFleet(updatedState, source.id, tappedBase.id, Owner.PLAYER)
-        if (updatedState.fleets.size > beforeFleetCount) {
-            launchedCount += 1
-        }
-    }
-    return updatedState.copy(
-        selectedBaseIds = emptySet(),
-        message = if (launchedCount > 0) {
-            "Launched from $launchedCount bases"
-        } else {
-            "Not enough ships to send"
-        },
-        messageExpiresAtSeconds = null
-    )
+    return launchFromSelectedBases(state, selectedSources, tappedBase.id)
 }
 
 internal fun sendFleet(state: MatchState, sourceId: Int, targetId: Int, sender: Owner): MatchState {
@@ -139,6 +105,37 @@ internal fun sendFleet(state: MatchState, sourceId: Int, targetId: Int, sender: 
         message = if (sender == Owner.PLAYER) "Launched ${departingUnits.toInt()} ships" else state.message,
         messageExpiresAtSeconds = if (sender == Owner.PLAYER) null else state.messageExpiresAtSeconds
     )
+}
+
+private fun launchFromSelectedBases(
+    state: MatchState,
+    selectedSources: List<BaseState>,
+    targetId: Int
+): MatchState {
+    var updatedState = state
+    var totalLaunchedShips = 0
+
+    selectedSources.forEach { source ->
+        val beforeFleetCount = updatedState.fleets.size
+        updatedState = sendFleet(updatedState, source.id, targetId, Owner.PLAYER)
+        if (updatedState.fleets.size > beforeFleetCount) {
+            totalLaunchedShips += updatedState.fleets.last().units.toInt()
+        }
+    }
+
+    return if (totalLaunchedShips > 0) {
+        updatedState.copy(
+            selectedBaseIds = emptySet(),
+            message = "Launched $totalLaunchedShips ships",
+            messageExpiresAtSeconds = null
+        )
+    } else {
+        updatedState.copy(
+            selectedBaseIds = emptySet(),
+            message = "Not enough ships to send",
+            messageExpiresAtSeconds = null
+        )
+    }
 }
 
 internal fun upgradeBase(state: MatchState, baseId: Int): MatchState {

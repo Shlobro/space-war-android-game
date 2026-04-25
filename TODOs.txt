@@ -9,5 +9,3 @@ funds is taking up wayy too much of the screen. it should be a flowting number w
 upgrading should take like 5 seconds.
 
 no need for the background around the pause button. get rid of it.
-
-there is this text that appears when i do an attack. it says "Launched from one bases" get rid of it it is extra.
