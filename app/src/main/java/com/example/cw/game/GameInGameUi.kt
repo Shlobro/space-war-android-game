@@ -70,7 +70,8 @@ private const val UPGRADE_ANIMATION_END_RADIUS_BOOST_DP = 24
 private const val UPGRADE_ANIMATION_STROKE_WIDTH_DP = 4
 
 internal data class InGameHudSummary(
-    val fundsLabel: String
+    val fundsLabel: String,
+    val elapsedTimeLabel: String
 )
 
 internal data class UpgradeAnimationState(
@@ -95,7 +96,7 @@ internal fun InGameHud(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             FundsHudReadout(
@@ -109,9 +110,14 @@ internal fun InGameHud(
             )
         }
 
+        MissionTimerReadout(
+            content = hudSummary.elapsedTimeLabel,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+
         if (state.message.isNotBlank()) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xC0182735)),
+                colors = CardDefaults.cardColors(containerColor = HudOverlaySurface),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
@@ -123,6 +129,34 @@ internal fun InGameHud(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MissionTimerReadout(content: String, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = HudOverlaySurface),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "\u23f1",
+                color = AccentCyan,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = content,
+                color = TextPrimary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -533,7 +567,8 @@ internal suspend fun runUpgradeAnimation(
 
 internal fun inGameHudSummary(state: MatchState): InGameHudSummary {
     return InGameHudSummary(
-        fundsLabel = formatFunds(state.playerMoney)
+        fundsLabel = formatFunds(state.playerMoney),
+        elapsedTimeLabel = formatCompletionTime(state.elapsedSeconds)
     )
 }
 

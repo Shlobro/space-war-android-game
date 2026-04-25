@@ -13,7 +13,7 @@ The `app` module contains the Android application packaging, the Compose UI entr
 
 - `src/main/AndroidManifest.xml`: Declares the application and launcher activity.
 - `src/main/java/com/example/cw/MainActivity.kt`: Hosts the Compose app and applies the shared theme.
-- `src/main/java/com/example/cw/game/`: Detailed gameplay implementation, including runtime level loading from packaged JSON assets. See `src/main/java/com/example/cw/game/game_developer_guide.md`.
+- `src/main/java/com/example/cw/game/`: Detailed gameplay implementation, including runtime level loading from packaged JSON assets and the in-match HUD timer shown during missions with shared HUD styling tokens. See `src/main/java/com/example/cw/game/game_developer_guide.md`.
 - `src/main/java/com/example/cw/ui/theme/`: Material theme tokens and typography for the app shell.
 - `src/main/assets/`: Packaged runtime data, including level JSON files shared with the editor. See `src/main/assets/assets_developer_guide.md`.
 - `src/main/res/`: String, color, theme, launcher icon, and backup resource files.

@@ -829,6 +829,36 @@ class GameLogicTest {
     }
 
     @Test
+    fun inGameHudSummary_formatsElapsedMissionTime() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(
+                    id = 1,
+                    position = Offset(100f, 100f),
+                    owner = Owner.PLAYER,
+                    type = BaseType.COMMAND,
+                    units = 10f,
+                    capLevel = 2
+                )
+            )
+        ).copy(elapsedSeconds = 125.9f)
+
+        val summary = inGameHudSummary(state)
+
+        assertEquals("2:05", summary.elapsedTimeLabel)
+    }
+
+    @Test
+    fun formatCompletionTime_clampsNegativeElapsedTimeToZero() {
+        assertEquals("0:00", formatCompletionTime(-4f))
+    }
+
+    @Test
+    fun formatCompletionTime_keepsCountingTotalMinutesPastOneHour() {
+        assertEquals("60:00", formatCompletionTime(3600f))
+    }
+
+    @Test
     fun onScreenTap_enemyTapWithoutSelection_showsTransientHint() {
         val neutralBase = BaseState(
             id = 2,
