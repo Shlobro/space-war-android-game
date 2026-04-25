@@ -68,14 +68,24 @@ internal fun onScreenTap(
     return launchFromSelectedBases(state, selectedSources, tappedBase.id)
 }
 
-internal fun sendFleet(state: MatchState, sourceId: Int, targetId: Int, sender: Owner): MatchState {
+internal fun sendFleet(
+    state: MatchState,
+    sourceId: Int,
+    targetId: Int,
+    sender: Owner,
+    showMessage: Boolean = true
+): MatchState {
     val source = state.bases.firstOrNull { it.id == sourceId } ?: return state
     val target = state.bases.firstOrNull { it.id == targetId } ?: return state
     if (source.owner != sender || source.id == target.id) return state
 
-    val departingUnits = floor(source.units * 0.5f)
-    if (departingUnits < 1f) {
-        return state.copy(message = "Not enough ships to send", messageExpiresAtSeconds = null)
+    val departingUnits = departingUnitsForLaunch(source.units)
+    if (departingUnits < 1) {
+        return if (showMessage && sender == Owner.PLAYER) {
+            state.copy(message = "Not enough ships to send", messageExpiresAtSeconds = null)
+        } else {
+            state
+        }
     }
 
     val updatedBases = state.bases.map {
@@ -91,7 +101,7 @@ internal fun sendFleet(state: MatchState, sourceId: Int, targetId: Int, sender: 
         position = source.position,
         path = route,
         pathIndex = 0,
-        units = departingUnits,
+        units = departingUnits.toFloat(),
         speed = if (source.type == BaseType.FAST) 260f else 120f,
         arrivalMultiplier = 1f,
         fleetDamageMultiplier = 1f,
@@ -102,8 +112,8 @@ internal fun sendFleet(state: MatchState, sourceId: Int, targetId: Int, sender: 
         bases = updatedBases,
         fleets = state.fleets + fleet,
         nextFleetId = state.nextFleetId + 1,
-        message = if (sender == Owner.PLAYER) "Launched ${departingUnits.toInt()} ships" else state.message,
-        messageExpiresAtSeconds = if (sender == Owner.PLAYER) null else state.messageExpiresAtSeconds
+        message = if (showMessage && sender == Owner.PLAYER) "Launched $departingUnits ships" else state.message,
+        messageExpiresAtSeconds = if (showMessage && sender == Owner.PLAYER) null else state.messageExpiresAtSeconds
     )
 }
 
@@ -116,10 +126,12 @@ private fun launchFromSelectedBases(
     var totalLaunchedShips = 0
 
     selectedSources.forEach { source ->
+        val currentSource = updatedState.bases.firstOrNull { it.id == source.id && it.owner == Owner.PLAYER } ?: return@forEach
+        val departingUnits = departingUnitsForLaunch(currentSource.units)
         val beforeFleetCount = updatedState.fleets.size
-        updatedState = sendFleet(updatedState, source.id, targetId, Owner.PLAYER)
+        updatedState = sendFleet(updatedState, source.id, targetId, Owner.PLAYER, showMessage = false)
         if (updatedState.fleets.size > beforeFleetCount) {
-            totalLaunchedShips += updatedState.fleets.last().units.toInt()
+            totalLaunchedShips += departingUnits
         }
     }
 
@@ -435,6 +447,8 @@ private fun resolveArrival(target: BaseState, fleet: FleetState): BaseState {
 }
 
 private fun capturedCapLevel(capLevel: Int): Int = max(1, capLevel - 2)
+
+private fun departingUnitsForLaunch(units: Float): Int = floor(units * 0.5f).toInt()
 
 private fun incomePerSecond(owner: Owner, bases: List<BaseState>, multiplier: Float): Float {
     val owned = bases.count { it.owner == owner }

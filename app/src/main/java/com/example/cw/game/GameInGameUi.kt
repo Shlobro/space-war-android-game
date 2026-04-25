@@ -49,7 +49,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -100,7 +99,7 @@ internal fun InGameHud(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FundsHudChip(
+            FundsHudReadout(
                 content = hudSummary.fundsLabel,
                 modifier = Modifier.weight(1f)
             )
@@ -130,48 +129,30 @@ internal fun InGameHud(
 }
 
 @Composable
-private fun FundsHudChip(content: String, modifier: Modifier = Modifier) {
-    Card(
+private fun FundsHudReadout(content: String, modifier: Modifier = Modifier) {
+    Box(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = HudFundsChipBackground),
-        shape = RoundedCornerShape(20.dp)
+        contentAlignment = Alignment.CenterStart
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .sizeIn(minWidth = 26.dp, minHeight = 26.dp)
-                    .background(HudFundsBadgeBackground, CircleShape)
-                    .border(1.dp, HudFundsBadgeBorder, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "$",
-                    color = HudFundsBadgeText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                Text(
-                    text = stringResource(R.string.hud_funds_label),
-                    color = HudFundsLabelText,
-                    fontSize = 10.sp,
-                    letterSpacing = 0.12.em,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = content,
-                    color = HudFundsValueText,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = "$",
+                color = AccentGold,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.04.em
+            )
+            Text(
+                text = content,
+                color = HudFundsValueText,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

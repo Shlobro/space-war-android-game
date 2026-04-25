@@ -165,6 +165,90 @@ class GameTapLaunchMessageTest {
         assertEquals("Launched 16 ships", updated.message)
     }
 
+    @Test
+    fun onScreenTap_enemyTargetWithMixedSelectionKeepsCombinedShipCountMessage() {
+        val firstSource = BaseState(
+            id = 1,
+            position = Offset(200f, 1200f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 20f,
+            capLevel = 2
+        )
+        val secondSource = BaseState(
+            id = 2,
+            position = Offset(320f, 1080f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 1f,
+            capLevel = 2
+        )
+        val enemyBase = BaseState(
+            id = 3,
+            position = Offset(800f, 400f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 8f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(firstSource, secondSource, enemyBase),
+            selectedBaseIds = setOf(firstSource.id, secondSource.id)
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(enemyBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertTrue(updated.selectedBaseIds.isEmpty())
+        assertEquals("Launched 10 ships", updated.message)
+    }
+
+    @Test
+    fun onScreenTap_enemyTargetWithNoEligibleShipsShowsFailureMessage() {
+        val firstSource = BaseState(
+            id = 1,
+            position = Offset(200f, 1200f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 1f,
+            capLevel = 2
+        )
+        val secondSource = BaseState(
+            id = 2,
+            position = Offset(320f, 1080f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 1f,
+            capLevel = 2
+        )
+        val enemyBase = BaseState(
+            id = 3,
+            position = Offset(800f, 400f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 8f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(firstSource, secondSource, enemyBase),
+            selectedBaseIds = setOf(firstSource.id, secondSource.id)
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(enemyBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertTrue(updated.selectedBaseIds.isEmpty())
+        assertEquals("Not enough ships to send", updated.message)
+    }
+
     private fun matchState(
         bases: List<BaseState>,
         selectedBaseIds: Set<Int> = emptySet()

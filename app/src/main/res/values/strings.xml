@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">CW</string>
-    <string name="hud_funds_label">Funds</string>
     <plurals name="stars_added_to_reserves">
         <item quantity="one">+%d star added to reserves</item>
         <item quantity="other">+%d stars added to reserves</item>
