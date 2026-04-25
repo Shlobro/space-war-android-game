@@ -3,6 +3,7 @@ package com.example.cw.game
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -31,10 +32,61 @@ class GameCanvasTest {
         val layout = baseLabelLayout(REPRESENTATIVE_SMALL_RENDERED_RADIUS)
 
         assertTrue(layout.levelBadgeOffsetFromCenter > layout.unitsOffsetY)
-        assertTrue(layout.levelBadgeRadius >= 8f)
+        assertTrue(layout.levelBadgeRadius >= 9f)
         assertTrue(layout.levelBadgeStrokeWidth >= 2f)
         assertTrue(layout.levelBadgeOffsetFromCenter + layout.levelBadgeRadius > REPRESENTATIVE_SMALL_RENDERED_RADIUS)
         assertTrue(layout.levelBadgeOffsetFromCenter < REPRESENTATIVE_SMALL_RENDERED_RADIUS + layout.levelBadgeRadius)
+    }
+
+    @Test
+    fun upgradeIndicatorLayout_placesArrowAboveBaseWithReadableSize() {
+        val layout = upgradeIndicatorLayout(baseRadius = 36f)
+
+        assertTrue(layout.offsetFromCenter < 0f)
+        assertTrue(layout.halfHeight >= 7f)
+        assertTrue(layout.halfWidth >= 5.5f)
+        assertTrue(layout.strokeWidth >= 1.5f)
+    }
+
+    @Test
+    fun resolveUpgradeIndicatorCenterY_keepsPreferredPositionWhenArrowFitsOnScreen() {
+        val layout = upgradeIndicatorLayout(baseRadius = 36f)
+
+        val centerY = resolveUpgradeIndicatorCenterY(
+            baseCenterY = 300f,
+            indicatorLayout = layout
+        )
+
+        assertEquals(300f + layout.offsetFromCenter, centerY, 0.001f)
+    }
+
+    @Test
+    fun resolveUpgradeIndicatorCenterY_clampsArrowInsideTopCanvasEdge() {
+        val layout = upgradeIndicatorLayout(baseRadius = 36f)
+
+        val centerY = resolveUpgradeIndicatorCenterY(
+            baseCenterY = 20f,
+            indicatorLayout = layout
+        )
+
+        assertEquals(layout.halfHeight + 2f, centerY, 0.001f)
+    }
+
+    @Test
+    fun showUpgradeIndicator_requiresAffordablePlayerBaseBelowMaxLevel() {
+        val upgradeablePlayerBase = BaseState(
+            id = 1,
+            position = Offset.Zero,
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 10f,
+            capLevel = 2
+        )
+
+        assertTrue(showUpgradeIndicator(upgradeablePlayerBase, playerMoney = 30f))
+        assertFalse(showUpgradeIndicator(upgradeablePlayerBase, playerMoney = 29f))
+        assertFalse(showUpgradeIndicator(upgradeablePlayerBase.copy(maxLevel = 2), playerMoney = 30f))
+        assertFalse(showUpgradeIndicator(upgradeablePlayerBase.copy(owner = Owner.AI_1), playerMoney = 30f))
     }
 
     @Test
@@ -44,9 +96,8 @@ class GameCanvasTest {
         val minTextSizePx = 10f
         val maxTextSizePx = 30f
 
-        assertEquals(10f, levelBadgeTextSize(smallLayout, minTextSizePx, maxTextSizePx), 0.001f)
-        assertTrue(levelBadgeTextSize(mediumLayout, minTextSizePx, maxTextSizePx) > minTextSizePx)
-        assertTrue(levelBadgeTextSize(mediumLayout, minTextSizePx, maxTextSizePx) < maxTextSizePx)
+        assertEquals(10.62f, levelBadgeTextSize(smallLayout, minTextSizePx, maxTextSizePx), 0.001f)
+        assertEquals(14.868f, levelBadgeTextSize(mediumLayout, minTextSizePx, maxTextSizePx), 0.001f)
     }
 
     @Test

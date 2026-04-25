@@ -68,7 +68,6 @@ fun GameApp() {
                 } else {
                     val dt = ((frameTime - previousTime) / 1_000_000_000f).coerceIn(0.0f, 0.033f)
                     previousTime = frameTime
-                    // Cash income reads the latest campaign state each frame; refill and speed are snapshotted into MatchState.
                     val stepped = stepMatch(currentMatch, dt, campaign.cashIncomeMultiplier())
                     val progress = applyPostStepCampaignProgress(campaign, currentMatch, stepped)
                     matchState = progress.match
@@ -102,6 +101,7 @@ fun GameApp() {
                     onBack = { appScreen = AppScreen.HOME },
                     onPlayLevel = { levelId ->
                         runCatching {
+                            // Refill and fleet-speed bonuses are snapshotted into MatchState at mission start.
                             createMatch(
                                 level = levelRepository.loadLevel(levelId),
                                 playerShipProductionMultiplier = campaign.playerShipProductionMultiplier(),
@@ -240,6 +240,7 @@ private fun restartLevel(
     campaign: CampaignState
 ): Result<MatchState> {
     return runCatching {
+        // Refill and fleet-speed bonuses are snapshotted into MatchState at mission start.
         createMatch(
             level = levelRepository.loadLevel(levelId),
             playerShipProductionMultiplier = campaign.playerShipProductionMultiplier(),

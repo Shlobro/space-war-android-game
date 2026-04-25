@@ -57,6 +57,25 @@ class CampaignPersistenceTest {
         assertEquals(0, decoded.bonusStarCredits)
         assertEquals(5, decoded.availableStars)
         assertEquals(0, decoded.spentStars)
+        assertEquals(0, decoded.cashRateLevel)
+        assertEquals(0, decoded.refillRateLevel)
+        assertEquals(0, decoded.fleetSpeedLevel)
+    }
+
+    @Test
+    fun decodeCampaignState_supportsCashRateLevelForSchemaTwoAndLater() {
+        val decoded = decodeCampaignState(
+            schemaVersion = 2,
+            completedLevels = "1,2",
+            starsByLevel = "1:3;2:2",
+            upgradePoints = 0,
+            bonusStarCredits = 1,
+            spentStars = 3,
+            cashRateLevel = 2,
+            refillRateLevel = 4,
+            fleetSpeedLevel = 1
+        )
+
         assertEquals(2, decoded.cashRateLevel)
         assertEquals(0, decoded.refillRateLevel)
         assertEquals(0, decoded.fleetSpeedLevel)
@@ -97,6 +116,7 @@ class CampaignPersistenceTest {
             fleetSpeedLevel = 1
         )
 
+        assertEquals(2, decoded.cashRateLevel)
         assertEquals(0, decoded.refillRateLevel)
         assertEquals(0, decoded.fleetSpeedLevel)
     }

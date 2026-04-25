@@ -21,6 +21,10 @@ private const val LEVEL_BADGE_VIEWPORT_MARGIN_PX = 2f
 private const val LEVEL_BADGE_TEXT_BASELINE_OFFSET_RATIO = 0.33f
 // Keeps the numeral visually close to the badge diameter without touching the border.
 private const val LEVEL_BADGE_TEXT_SIZE_RATIO = 1.18f
+private const val UPGRADE_INDICATOR_VIEWPORT_MARGIN_PX = 2f
+private const val UPGRADE_INDICATOR_GAP_RATIO = 0.14f
+private const val UPGRADE_INDICATOR_SIZE_RATIO = 0.24f
+private const val UPGRADE_INDICATOR_STROKE_RATIO = 0.22f
 
 @Composable
 internal fun GameCanvas(state: MatchState, modifier: Modifier = Modifier) {
@@ -147,10 +151,15 @@ private fun DrawScope.drawBase(
     val center = worldToScreen(base.position, size, state.worldBounds)
     val baseRadius = base.radius * scale(size, state.worldBounds)
     val labelLayout = baseLabelLayout(baseRadius)
+    val upgradeIndicatorLayout = upgradeIndicatorLayout(baseRadius)
     val levelBadgeCenterY = resolveLevelBadgeCenterY(
         baseCenterY = center.y,
         canvasHeight = size.height,
         labelLayout = labelLayout
+    )
+    val upgradeIndicatorCenterY = resolveUpgradeIndicatorCenterY(
+        baseCenterY = center.y,
+        indicatorLayout = upgradeIndicatorLayout
     )
     // This paint instance is reused across bases, so the badge text size must be reset per draw call.
     levelPaint.textSize = levelBadgeTextSize(labelLayout, minLevelBadgeTextSizePx, maxLevelBadgeTextSizePx)
@@ -221,6 +230,25 @@ private fun DrawScope.drawBase(
         levelBadgeCenterY + (levelPaint.textSize * LEVEL_BADGE_TEXT_BASELINE_OFFSET_RATIO),
         levelPaint
     )
+
+    if (showUpgradeIndicator(base, state.playerMoney)) {
+        val arrowPath = upgradeIndicatorPath(
+            center = Offset(center.x, upgradeIndicatorCenterY),
+            indicatorLayout = upgradeIndicatorLayout
+        )
+        drawPath(
+            path = arrowPath,
+            color = AccentGold
+        )
+        drawPath(
+            path = arrowPath,
+            color = NodeUpgradeIndicatorOutline,
+            style = Stroke(
+                width = upgradeIndicatorLayout.strokeWidth,
+                cap = StrokeCap.Round
+            )
+        )
+    }
 }
 
 private fun DrawScope.drawFleetTrails(state: MatchState) {
@@ -273,9 +301,16 @@ internal data class BaseLabelLayout(
     val levelBadgeStrokeWidth: Float
 )
 
+internal data class UpgradeIndicatorLayout(
+    val offsetFromCenter: Float,
+    val halfWidth: Float,
+    val halfHeight: Float,
+    val strokeWidth: Float
+)
+
 internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
     val unitsOffsetY = (baseRadius * 0.08f).coerceIn(2f, 5f)
-    val levelBadgeRadius = (baseRadius * 0.31f).coerceIn(8f, 13.5f)
+    val levelBadgeRadius = (baseRadius * 0.35f).coerceIn(9f, 15f)
     val levelBadgeOffsetFromCenter = baseRadius - (levelBadgeRadius * LEVEL_BADGE_EDGE_OVERLAP_RATIO)
     val levelBadgeStrokeWidth = (levelBadgeRadius * 0.22f).coerceIn(2f, 3f)
     return BaseLabelLayout(
@@ -283,6 +318,19 @@ internal fun baseLabelLayout(baseRadius: Float): BaseLabelLayout {
         levelBadgeOffsetFromCenter = levelBadgeOffsetFromCenter,
         levelBadgeRadius = levelBadgeRadius,
         levelBadgeStrokeWidth = levelBadgeStrokeWidth
+    )
+}
+
+internal fun upgradeIndicatorLayout(baseRadius: Float): UpgradeIndicatorLayout {
+    val halfHeight = (baseRadius * UPGRADE_INDICATOR_SIZE_RATIO).coerceIn(7f, 11f)
+    val halfWidth = (halfHeight * 0.8f).coerceIn(5.5f, 8.5f)
+    val offsetFromCenter = -(baseRadius + halfHeight + (baseRadius * UPGRADE_INDICATOR_GAP_RATIO).coerceAtLeast(4f))
+    val strokeWidth = (halfHeight * UPGRADE_INDICATOR_STROKE_RATIO).coerceIn(1.5f, 2.5f)
+    return UpgradeIndicatorLayout(
+        offsetFromCenter = offsetFromCenter,
+        halfWidth = halfWidth,
+        halfHeight = halfHeight,
+        strokeWidth = strokeWidth
     )
 }
 
@@ -305,4 +353,34 @@ internal fun resolveLevelBadgeCenterY(
     val maxCenterY = (canvasHeight - labelLayout.levelBadgeRadius - LEVEL_BADGE_VIEWPORT_MARGIN_PX)
         .coerceAtLeast(minCenterY)
     return preferredCenterY.coerceIn(minCenterY, maxCenterY)
+}
+
+internal fun resolveUpgradeIndicatorCenterY(
+    baseCenterY: Float,
+    indicatorLayout: UpgradeIndicatorLayout
+): Float {
+    val preferredCenterY = baseCenterY + indicatorLayout.offsetFromCenter
+    val minCenterY = indicatorLayout.halfHeight + UPGRADE_INDICATOR_VIEWPORT_MARGIN_PX
+    return preferredCenterY.coerceAtLeast(minCenterY)
+}
+
+internal fun showUpgradeIndicator(base: BaseState, playerMoney: Float): Boolean {
+    return base.owner == Owner.PLAYER &&
+        base.capLevel < base.maxLevel &&
+        playerMoney >= upgradeCost(base)
+}
+
+private fun upgradeIndicatorPath(center: Offset, indicatorLayout: UpgradeIndicatorLayout): Path {
+    val topY = center.y - indicatorLayout.halfHeight
+    val bottomY = center.y + indicatorLayout.halfHeight
+    return Path().apply {
+        moveTo(center.x, topY)
+        lineTo(center.x + indicatorLayout.halfWidth, center.y)
+        lineTo(center.x + indicatorLayout.halfWidth * 0.42f, center.y)
+        lineTo(center.x + indicatorLayout.halfWidth * 0.42f, bottomY)
+        lineTo(center.x - indicatorLayout.halfWidth * 0.42f, bottomY)
+        lineTo(center.x - indicatorLayout.halfWidth * 0.42f, center.y)
+        lineTo(center.x - indicatorLayout.halfWidth, center.y)
+        close()
+    }
 }

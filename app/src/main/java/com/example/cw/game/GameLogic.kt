@@ -112,7 +112,7 @@ internal fun sendFleet(
         bases = updatedBases,
         fleets = state.fleets + fleet,
         nextFleetId = state.nextFleetId + 1,
-        message = if (showMessage && sender == Owner.PLAYER) "Launched $departingUnits ships" else state.message,
+        message = if (showMessage && sender == Owner.PLAYER) "" else state.message,
         messageExpiresAtSeconds = if (showMessage && sender == Owner.PLAYER) null else state.messageExpiresAtSeconds
     )
 }
@@ -138,7 +138,7 @@ private fun launchFromSelectedBases(
     return if (totalLaunchedShips > 0) {
         updatedState.copy(
             selectedBaseIds = emptySet(),
-            message = "Launched $totalLaunchedShips ships",
+            message = "",
             messageExpiresAtSeconds = null
         )
     } else {

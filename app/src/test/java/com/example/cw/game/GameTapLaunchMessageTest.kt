@@ -14,7 +14,7 @@ class GameTapLaunchMessageTest {
     private val testWorldBounds = WorldBounds(width = 1000f, height = 1600f)
 
     @Test
-    fun onScreenTap_enemyTargetUsesShipCountMessageInsteadOfBatchLaunchText() {
+    fun onScreenTap_enemyTargetLaunchesWithoutSuccessBanner() {
         val playerBase = BaseState(
             id = 1,
             position = Offset(200f, 1200f),
@@ -44,11 +44,11 @@ class GameTapLaunchMessageTest {
         )
 
         assertTrue(updated.selectedBaseIds.isEmpty())
-        assertEquals("Launched 10 ships", updated.message)
+        assertEquals("", updated.message)
     }
 
     @Test
-    fun onScreenTap_doubleTapFriendlyTargetUsesShipCountMessageInsteadOfBatchReinforceText() {
+    fun onScreenTap_doubleTapFriendlyTargetLaunchesWithoutSuccessBanner() {
         val sourceBase = BaseState(
             id = 1,
             position = Offset(200f, 1200f),
@@ -78,11 +78,11 @@ class GameTapLaunchMessageTest {
         )
 
         assertTrue(updated.selectedBaseIds.isEmpty())
-        assertEquals("Launched 10 ships", updated.message)
+        assertEquals("", updated.message)
     }
 
     @Test
-    fun onScreenTap_enemyTargetWithMultiSelectionUsesCombinedShipCountMessage() {
+    fun onScreenTap_enemyTargetWithMultiSelectionLaunchesWithoutSuccessBanner() {
         val firstSource = BaseState(
             id = 1,
             position = Offset(200f, 1200f),
@@ -120,11 +120,11 @@ class GameTapLaunchMessageTest {
         )
 
         assertTrue(updated.selectedBaseIds.isEmpty())
-        assertEquals("Launched 16 ships", updated.message)
+        assertEquals("", updated.message)
     }
 
     @Test
-    fun onScreenTap_doubleTapFriendlyTargetWithMultiSelectionUsesCombinedShipCountMessage() {
+    fun onScreenTap_doubleTapFriendlyTargetWithMultiSelectionLaunchesWithoutSuccessBanner() {
         val firstSource = BaseState(
             id = 1,
             position = Offset(200f, 1200f),
@@ -162,11 +162,11 @@ class GameTapLaunchMessageTest {
         )
 
         assertTrue(updated.selectedBaseIds.isEmpty())
-        assertEquals("Launched 16 ships", updated.message)
+        assertEquals("", updated.message)
     }
 
     @Test
-    fun onScreenTap_enemyTargetWithMixedSelectionKeepsCombinedShipCountMessage() {
+    fun onScreenTap_enemyTargetWithMixedSelectionStillClearsSuccessBanner() {
         val firstSource = BaseState(
             id = 1,
             position = Offset(200f, 1200f),
@@ -204,7 +204,44 @@ class GameTapLaunchMessageTest {
         )
 
         assertTrue(updated.selectedBaseIds.isEmpty())
-        assertEquals("Launched 10 ships", updated.message)
+        assertEquals("", updated.message)
+    }
+
+    @Test
+    fun onScreenTap_successfulLaunchClearsTransientHintMessage() {
+        val playerBase = BaseState(
+            id = 1,
+            position = Offset(200f, 1200f),
+            owner = Owner.PLAYER,
+            type = BaseType.COMMAND,
+            units = 20f,
+            capLevel = 2
+        )
+        val enemyBase = BaseState(
+            id = 2,
+            position = Offset(800f, 400f),
+            owner = Owner.AI_1,
+            type = BaseType.COMMAND,
+            units = 8f,
+            capLevel = 2
+        )
+        val state = matchState(
+            bases = listOf(playerBase, enemyBase),
+            selectedBaseIds = setOf(playerBase.id)
+        ).copy(
+            message = "Tap one of your bases first",
+            messageExpiresAtSeconds = 1.5f
+        )
+
+        val updated = onScreenTap(
+            state = state,
+            screenTap = tapAt(enemyBase.position),
+            viewportSize = viewportSize,
+            isDoubleTap = false
+        )
+
+        assertEquals("", updated.message)
+        assertEquals(null, updated.messageExpiresAtSeconds)
     }
 
     @Test

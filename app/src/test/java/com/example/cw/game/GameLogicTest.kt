@@ -28,7 +28,7 @@ class GameLogicTest {
         assertEquals(1, updated.fleets.size)
         assertEquals(16f, updated.bases.first { it.id == 1 }.units)
         assertEquals(16f, updated.fleets.single().units)
-        assertEquals("Launched 16 ships", updated.message)
+        assertEquals("", updated.message)
     }
 
     @Test
