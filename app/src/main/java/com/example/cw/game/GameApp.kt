@@ -75,7 +75,7 @@ fun GameApp() {
                     campaign = progress.campaign
                 }
             }
-            }
+        }
     }
 
     val backNavigation = resolveBackNavigation(appScreen, matchState)
@@ -112,7 +112,9 @@ fun GameApp() {
                             createMatch(
                                 level = levelRepository.loadLevel(levelId),
                                 playerShipProductionMultiplier = campaign.playerShipProductionMultiplier(),
-                                playerFleetSpeedMultiplier = campaign.playerFleetSpeedMultiplier()
+                                playerFleetSpeedMultiplier = campaign.playerFleetSpeedMultiplier(),
+                                selectedSpecialAbility = campaign.selectedSpecialAbility,
+                                selectedSpecialAbilityLevel = campaign.equippedSpecialAbilityLevel()
                             )
                         }
                             .onSuccess { level ->
@@ -129,6 +131,7 @@ fun GameApp() {
                 AppScreen.UPGRADES -> UpgradesScreen(
                     campaign = campaign,
                     onBack = { appScreen = AppScreen.HOME },
+                    onOpenSpecialAbilities = { appScreen = AppScreen.ABILITIES },
                     onUpgradeCashRate = {
                         campaign = upgradeCampaignStat(campaign, campaign.cashRateLevel) {
                             copy(cashRateLevel = cashRateLevel + 1)
@@ -143,6 +146,17 @@ fun GameApp() {
                         campaign = upgradeCampaignStat(campaign, campaign.fleetSpeedLevel) {
                             copy(fleetSpeedLevel = fleetSpeedLevel + 1)
                         }
+                    }
+                )
+
+                AppScreen.ABILITIES -> SpecialAbilitiesScreen(
+                    campaign = campaign,
+                    onBack = { appScreen = AppScreen.UPGRADES },
+                    onSelectAbility = { ability ->
+                        campaign = campaign.selectSpecialAbility(ability)
+                    },
+                    onUpgradeAbility = { ability ->
+                        campaign = campaign.upgradeSpecialAbility(ability)
                     }
                 )
 
@@ -198,6 +212,9 @@ fun GameApp() {
                             state = activeMatch,
                             onOpenMenu = {
                                 matchState = togglePause(activeMatch)
+                            },
+                            onActivateAbility = {
+                                matchState = activateSpecialAbility(activeMatch)
                             }
                         )
 
@@ -265,6 +282,12 @@ internal fun resolveBackNavigation(
             handled = true
         )
 
+        AppScreen.ABILITIES -> BackNavigationResult(
+            screen = AppScreen.UPGRADES,
+            matchState = matchState,
+            handled = true
+        )
+
         AppScreen.IN_GAME -> when {
             matchState == null -> BackNavigationResult(
                 screen = AppScreen.LEVELS,
@@ -297,7 +320,9 @@ private fun restartLevel(
         createMatch(
             level = levelRepository.loadLevel(levelId),
             playerShipProductionMultiplier = campaign.playerShipProductionMultiplier(),
-            playerFleetSpeedMultiplier = campaign.playerFleetSpeedMultiplier()
+            playerFleetSpeedMultiplier = campaign.playerFleetSpeedMultiplier(),
+            selectedSpecialAbility = campaign.selectedSpecialAbility,
+            selectedSpecialAbilityLevel = campaign.equippedSpecialAbilityLevel()
         )
     }
 }

@@ -38,6 +38,15 @@ class GameAppBackNavigationTest {
     }
 
     @Test
+    fun resolveBackNavigation_abilitiesReturnsToUpgrades() {
+        val result = resolveBackNavigation(AppScreen.ABILITIES, matchState = null)
+
+        assertTrue(result.handled)
+        assertEquals(AppScreen.UPGRADES, result.screen)
+        assertNull(result.matchState)
+    }
+
+    @Test
     fun resolveBackNavigation_runningMissionOpensPauseMenu() {
         val runningMatch = matchState(isPaused = false, status = MatchStatus.RUNNING)
 

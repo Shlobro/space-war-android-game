@@ -33,6 +33,10 @@ import androidx.compose.ui.unit.sp
 import com.example.cw.game.levels.LevelSummary
 import com.example.cw.game.levels.isLevelUnlocked
 
+private const val SPECIAL_ABILITY_SELECTED_BACKGROUND_ALPHA = 0.18f
+private const val SPECIAL_ABILITY_IDLE_BORDER_ALPHA = 0.25f
+private const val SPECIAL_ABILITY_SELECTED_BORDER_ALPHA = 0.5f
+
 @Composable
 internal fun HomeScreen(
     campaign: CampaignState,
@@ -302,6 +306,7 @@ private fun LevelCard(
 internal fun UpgradesScreen(
     campaign: CampaignState,
     onBack: () -> Unit,
+    onOpenSpecialAbilities: () -> Unit,
     onUpgradeCashRate: () -> Unit,
     onUpgradeRefillRate: () -> Unit,
     onUpgradeFleetSpeed: () -> Unit
@@ -389,7 +394,10 @@ internal fun UpgradesScreen(
                     onUpgrade = onUpgradeFleetSpeed
                 )
 
-                UpgradePlaceholderCard("SPECIAL ABILITIES", "Loadout Upgrade", "Reserved for active abilities such as speed burst, defense, instant refill, and attack boosts.")
+                SpecialAbilitiesEntryCard(
+                    selectedAbility = campaign.selectedSpecialAbility,
+                    onOpen = onOpenSpecialAbilities
+                )
 
                 Spacer(Modifier.height(8.dp))
 
@@ -492,7 +500,10 @@ private fun UpgradeCard(
 }
 
 @Composable
-private fun UpgradePlaceholderCard(title: String, subtitle: String, description: String) {
+private fun SpecialAbilitiesEntryCard(
+    selectedAbility: SpecialAbilityType?,
+    onOpen: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -508,20 +519,208 @@ private fun UpgradePlaceholderCard(title: String, subtitle: String, description:
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(title, color = TextDim, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                    Text(subtitle, color = TextDim, fontSize = 11.sp)
+                    Text("SPECIAL ABILITIES", color = AccentCyan, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("Loadout Screen", color = TextSecond, fontSize = 11.sp)
                 }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(BgCard)
-                        .border(1.dp, BorderDim, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                PrimaryButton("MANAGE", onOpen)
+            }
+            Text(
+                "Pick one active ability for your campaign loadout and upgrade its strength with stars.",
+                color = TextSecond,
+                fontSize = 12.sp
+            )
+            Text(
+                "Equipped: ${selectedAbility?.title ?: "None"}",
+                color = if (selectedAbility == null) TextDim else AccentGold,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+internal fun SpecialAbilitiesScreen(
+    campaign: CampaignState,
+    onBack: () -> Unit,
+    onSelectAbility: (SpecialAbilityType) -> Unit,
+    onUpgradeAbility: (SpecialAbilityType) -> Unit
+) {
+    MenuBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "SPECIAL ABILITIES",
+                        color = AccentCyan,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Text("Choose one active loadout", color = TextSecond, fontSize = 12.sp, letterSpacing = 1.sp)
+                }
+                GhostButton("BACK", onBack)
+            }
+
+            GlowDivider(Modifier.padding(horizontal = 20.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("LOCKED", color = TextDim, fontSize = 10.sp, letterSpacing = 1.sp)
+                    StatPill("READY", "${campaign.availableStars} ★", AccentGold)
+                    StatPill(
+                        "EQUIPPED",
+                        campaign.selectedSpecialAbility?.title ?: "NONE",
+                        campaign.selectedSpecialAbility?.let(::specialAbilityAccent) ?: TextDim
+                    )
+                }
+
+                Text(
+                    "Only one special ability can be equipped at a time. Upgrade levels are saved per ability, so switching loadouts never loses progress.",
+                    color = TextSecond,
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp
+                )
+
+                SpecialAbilityType.entries.forEach { ability ->
+                    SpecialAbilityCard(
+                        ability = ability,
+                        currentLevel = campaign.specialAbilityLevel(ability),
+                        isSelected = campaign.selectedSpecialAbility == ability,
+                        canAffordUpgrade = campaign.canUpgradeSpecialAbility(ability),
+                        onSelect = { onSelectAbility(ability) },
+                        onUpgrade = { onUpgradeAbility(ability) }
+                    )
                 }
             }
-            Text(description, color = TextDim, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun SpecialAbilityCard(
+    ability: SpecialAbilityType,
+    currentLevel: Int,
+    isSelected: Boolean,
+    canAffordUpgrade: Boolean,
+    onSelect: () -> Unit,
+    onUpgrade: () -> Unit
+) {
+    val isMaxLevel = currentLevel >= CAMPAIGN_MAX_UPGRADE_LEVEL
+    val accentColor = specialAbilityAccent(ability)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) accentColor else accentColor.copy(alpha = SPECIAL_ABILITY_IDLE_BORDER_ALPHA),
+                shape = RoundedCornerShape(12.dp)
+            )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        ability.title.uppercase(),
+                        color = accentColor,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
+                    )
+                    Text(
+                        ability.subtitle,
+                        color = TextSecond,
+                        fontSize = 11.sp,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(if (isSelected) accentColor.copy(alpha = SPECIAL_ABILITY_SELECTED_BACKGROUND_ALPHA) else BgCardAlt)
+                        .border(1.dp, if (isSelected) accentColor.copy(alpha = SPECIAL_ABILITY_SELECTED_BORDER_ALPHA) else BorderDim, RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        if (isSelected) "EQUIPPED" else "UNEQUIPPED",
+                        color = if (isSelected) accentColor else TextDim,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+
+            Text(ability.description, color = TextPrimary, fontSize = 13.sp, lineHeight = 18.sp)
+            Text(ability.upgradeDescription, color = TextSecond, fontSize = 12.sp, lineHeight = 17.sp)
+
+            GlowDivider()
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    if (isMaxLevel) "Level MAX" else "Level $currentLevel / $CAMPAIGN_MAX_UPGRADE_LEVEL",
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    if (isMaxLevel) "--" else "Upgrade: 1 ★",
+                    color = if (canAffordUpgrade && !isMaxLevel) AccentGold else TextDim,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                GhostButton(
+                    label = if (isSelected) "EQUIPPED" else "EQUIP",
+                    onClick = onSelect,
+                    modifier = Modifier.weight(1f)
+                )
+                PrimaryButton(
+                    label = if (isMaxLevel) "MAXED" else "UPGRADE",
+                    onClick = onUpgrade,
+                    enabled = canAffordUpgrade && !isMaxLevel,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }

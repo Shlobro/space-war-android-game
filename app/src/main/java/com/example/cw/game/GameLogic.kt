@@ -13,6 +13,15 @@ internal const val PER_OWNED_BASE_FUNDS_PER_SECOND = 0.25f
 internal const val INVALID_TAP_HINT_DURATION_SECONDS = 1.5f
 internal const val AI_PRESSURE_ATTACK_MIN_ODDS = 1.2f
 private const val TAP_SLOP_PX = 56f
+private const val SPECIAL_ABILITY_SPEED_BASE_MULTIPLIER = 1.35f
+private const val SPECIAL_ABILITY_SPEED_PER_LEVEL = 0.05f
+private const val SPECIAL_ABILITY_ATTACK_BASE_MULTIPLIER = 1.2f
+private const val SPECIAL_ABILITY_ATTACK_PER_LEVEL = 0.08f
+private const val SPECIAL_ABILITY_DEFENSE_BASE_REDUCTION = 0.15f
+private const val SPECIAL_ABILITY_DEFENSE_PER_LEVEL = 0.05f
+private const val SPECIAL_ABILITY_MIN_INCOMING_DAMAGE_MULTIPLIER = 0.55f
+private const val SPECIAL_ABILITY_REFILL_SURGE_BASE_MULTIPLIER = 1.35f
+private const val SPECIAL_ABILITY_REFILL_SURGE_PER_LEVEL = 0.1f
 
 internal fun onScreenTap(
     state: MatchState,
@@ -154,6 +163,45 @@ internal fun upgradeBase(state: MatchState, baseId: Int): MatchState {
     return upgradeBaseForOwner(state, baseId, Owner.PLAYER, showMessage = true)
 }
 
+internal fun activateSpecialAbility(state: MatchState): MatchState {
+    if (state.status != MatchStatus.RUNNING || state.isPaused) return state
+    val ability = state.selectedSpecialAbility ?: return state
+    if (state.specialAbilityCooldownSecondsRemaining > 0f || state.specialAbilityActiveSecondsRemaining > 0f) {
+        return state
+    }
+
+    return when (ability) {
+        SpecialAbilityType.SPEED_BOOST,
+        SpecialAbilityType.DEFENSE_BOOST,
+        SpecialAbilityType.ATTACK_BOOST -> state.copy(
+            specialAbilityActiveSecondsRemaining = SPECIAL_ABILITY_ACTIVE_DURATION_SECONDS,
+            specialAbilityCooldownSecondsRemaining = SPECIAL_ABILITY_COOLDOWN_SECONDS,
+            specialAbilityTargetBaseId = null,
+            message = "${ability.title} activated",
+            messageExpiresAtSeconds = null
+        )
+
+        SpecialAbilityType.INSTANT_REFILL -> {
+            val selectedBase = selectedSinglePlayerBase(state)
+                ?: return state.copy(
+                    message = "Select one of your bases to refill",
+                    messageExpiresAtSeconds = state.elapsedSeconds + INVALID_TAP_HINT_DURATION_SECONDS
+                )
+            val updatedBases = state.bases.map { base ->
+                if (base.id == selectedBase.id) base.copy(units = base.cap.toFloat()) else base
+            }
+            state.copy(
+                bases = updatedBases,
+                specialAbilityActiveSecondsRemaining = SPECIAL_ABILITY_ACTIVE_DURATION_SECONDS,
+                specialAbilityCooldownSecondsRemaining = SPECIAL_ABILITY_COOLDOWN_SECONDS,
+                specialAbilityTargetBaseId = selectedBase.id,
+                message = "${ability.title} activated",
+                messageExpiresAtSeconds = null
+            )
+        }
+    }
+}
+
 private fun upgradeBaseForOwner(
     state: MatchState,
     baseId: Int,
@@ -211,21 +259,27 @@ private fun upgradeBaseForOwner(
 internal fun stepMatch(state: MatchState, dt: Float, cashIncomeMultiplier: Float): MatchState {
     if (state.status != MatchStatus.RUNNING || state.isPaused) return state
 
-    var bases = produceShips(state.bases, dt, state.playerShipProductionMultiplier)
+    val timedAbilityState = advanceSpecialAbilityTimers(state, dt)
+    var bases = produceShips(
+        bases = timedAbilityState.bases,
+        dt = dt,
+        playerShipProductionMultiplier = timedAbilityState.playerShipProductionMultiplier,
+        specialAbilityState = timedAbilityState
+    )
     val elapsedSeconds = state.elapsedSeconds + dt
     val playerMoney = state.playerMoney + incomePerSecond(Owner.PLAYER, bases, cashIncomeMultiplier) * dt
-    val aiStatesWithIncome = state.aiStates.mapValues { (owner, aiState) ->
+    val aiStatesWithIncome = timedAbilityState.aiStates.mapValues { (owner, aiState) ->
         aiState.copy(money = aiState.money + incomePerSecond(owner, bases, cashIncomeMultiplier) * dt)
     }
-    var fleets = moveFleets(state.fleets, dt)
-    fleets = resolveFleetSkirmishes(fleets, dt)
+    var fleets = moveFleets(timedAbilityState.fleets, dt, timedAbilityState)
+    fleets = resolveFleetSkirmishes(fleets, dt, timedAbilityState)
 
-    val arrival = applyFleetArrivals(bases, fleets)
+    val arrival = applyFleetArrivals(bases, fleets, timedAbilityState)
     bases = arrival.first
     fleets = arrival.second
 
     val aiState = runEnemyAi(
-        state.copy(
+        timedAbilityState.copy(
             bases = bases,
             fleets = fleets,
             playerMoney = playerMoney,
@@ -356,12 +410,14 @@ private fun preferredPressureTarget(source: BaseState, nearbyTargets: List<BaseS
 private fun produceShips(
     bases: List<BaseState>,
     dt: Float,
-    playerShipProductionMultiplier: Float
+    playerShipProductionMultiplier: Float,
+    specialAbilityState: MatchState
 ): List<BaseState> {
     return bases.map { base ->
         val rateMultiplier = if (base.owner == Owner.NEUTRAL) 0.5f else 1f
         val upgradeMultiplier = if (base.owner == Owner.PLAYER) playerShipProductionMultiplier else 1f
-        val rate = base.productionRate * rateMultiplier * upgradeMultiplier * dt
+        val specialAbilityMultiplier = productionMultiplierForBase(base, specialAbilityState)
+        val rate = base.productionRate * rateMultiplier * upgradeMultiplier * specialAbilityMultiplier * dt
         val units = if (base.units > base.cap.toFloat()) {
             max(base.cap.toFloat(), base.units - rate)
         } else {
@@ -376,11 +432,11 @@ private fun fleetSpeedForLaunch(source: BaseState, sender: Owner, playerFleetSpe
     return if (sender == Owner.PLAYER) baseSpeed * playerFleetSpeedMultiplier else baseSpeed
 }
 
-private fun moveFleets(fleets: List<FleetState>, dt: Float): List<FleetState> {
+private fun moveFleets(fleets: List<FleetState>, dt: Float, state: MatchState): List<FleetState> {
     return fleets.map { fleet ->
         var position = fleet.position
         var index = fleet.pathIndex
-        var distanceLeft = fleet.speed * dt
+        var distanceLeft = fleet.speed * activeFleetSpeedMultiplier(fleet.owner, state) * dt
         while (distanceLeft > 0f && index < fleet.path.size) {
             val waypoint = fleet.path[index]
             val toWaypoint = waypoint - position
@@ -399,7 +455,7 @@ private fun moveFleets(fleets: List<FleetState>, dt: Float): List<FleetState> {
     }
 }
 
-private fun resolveFleetSkirmishes(fleets: List<FleetState>, dt: Float): List<FleetState> {
+private fun resolveFleetSkirmishes(fleets: List<FleetState>, dt: Float, state: MatchState): List<FleetState> {
     val damages = MutableList(fleets.size) { 0f }
     for (i in fleets.indices) {
         for (j in i + 1 until fleets.size) {
@@ -408,8 +464,8 @@ private fun resolveFleetSkirmishes(fleets: List<FleetState>, dt: Float): List<Fl
             if (first.owner == second.owner) continue
             if (distance(first.position, second.position) > 70f) continue
 
-            damages[i] += second.units * second.fleetDamageMultiplier * 0.14f * dt
-            damages[j] += first.units * first.fleetDamageMultiplier * 0.14f * dt
+            damages[i] += second.units * second.fleetDamageMultiplier * activeAttackMultiplier(second.owner, state) * 0.14f * dt
+            damages[j] += first.units * first.fleetDamageMultiplier * activeAttackMultiplier(first.owner, state) * 0.14f * dt
         }
     }
 
@@ -421,7 +477,8 @@ private fun resolveFleetSkirmishes(fleets: List<FleetState>, dt: Float): List<Fl
 
 private fun applyFleetArrivals(
     bases: List<BaseState>,
-    fleets: List<FleetState>
+    fleets: List<FleetState>,
+    state: MatchState
 ): Pair<List<BaseState>, List<FleetState>> {
     var currentBases = bases
     val survivors = mutableListOf<FleetState>()
@@ -432,17 +489,20 @@ private fun applyFleetArrivals(
         }
 
         val target = currentBases.firstOrNull { it.id == fleet.targetId } ?: return@forEach
-        val updatedTarget = resolveArrival(target, fleet)
+        val updatedTarget = resolveArrival(target, fleet, state)
         currentBases = currentBases.map { if (it.id == target.id) updatedTarget else it }
     }
     return currentBases to survivors
 }
 
-private fun resolveArrival(target: BaseState, fleet: FleetState): BaseState {
+private fun resolveArrival(target: BaseState, fleet: FleetState, state: MatchState): BaseState {
     return if (target.owner == fleet.owner) {
         target.copy(units = target.units + fleet.units * fleet.arrivalMultiplier)
     } else {
-        val attackPower = fleet.units * fleet.arrivalMultiplier
+        val attackPower = fleet.units *
+            fleet.arrivalMultiplier *
+            activeAttackMultiplier(fleet.owner, state) *
+            incomingDamageMultiplier(target, fleet.owner, state)
         if (attackPower > target.units) {
             val capturedCapLevel = capturedCapLevel(target.capLevel)
             target.copy(
@@ -463,4 +523,44 @@ private fun departingUnitsForLaunch(units: Float): Int = floor(units * 0.5f).toI
 private fun incomePerSecond(owner: Owner, bases: List<BaseState>, multiplier: Float): Float {
     val owned = bases.count { it.owner == owner }
     return if (owner.isNeutral) 0f else (BASE_FUNDS_PER_SECOND + owned * PER_OWNED_BASE_FUNDS_PER_SECOND) * multiplier
+}
+
+private fun advanceSpecialAbilityTimers(state: MatchState, dt: Float): MatchState {
+    val activeRemaining = (state.specialAbilityActiveSecondsRemaining - dt).coerceAtLeast(0f)
+    val cooldownRemaining = (state.specialAbilityCooldownSecondsRemaining - dt).coerceAtLeast(0f)
+    val shouldClearTarget = activeRemaining <= 0f && state.selectedSpecialAbility == SpecialAbilityType.INSTANT_REFILL
+    return state.copy(
+        specialAbilityActiveSecondsRemaining = activeRemaining,
+        specialAbilityCooldownSecondsRemaining = cooldownRemaining,
+        specialAbilityTargetBaseId = if (shouldClearTarget) null else state.specialAbilityTargetBaseId
+    )
+}
+
+private fun activeFleetSpeedMultiplier(owner: Owner, state: MatchState): Float {
+    if (owner != Owner.PLAYER || state.selectedSpecialAbility != SpecialAbilityType.SPEED_BOOST) return 1f
+    if (state.specialAbilityActiveSecondsRemaining <= 0f) return 1f
+    return SPECIAL_ABILITY_SPEED_BASE_MULTIPLIER + state.selectedSpecialAbilityLevel * SPECIAL_ABILITY_SPEED_PER_LEVEL
+}
+
+private fun activeAttackMultiplier(owner: Owner, state: MatchState): Float {
+    if (owner != Owner.PLAYER || state.selectedSpecialAbility != SpecialAbilityType.ATTACK_BOOST) return 1f
+    if (state.specialAbilityActiveSecondsRemaining <= 0f) return 1f
+    return SPECIAL_ABILITY_ATTACK_BASE_MULTIPLIER + state.selectedSpecialAbilityLevel * SPECIAL_ABILITY_ATTACK_PER_LEVEL
+}
+
+private fun incomingDamageMultiplier(target: BaseState, attacker: Owner, state: MatchState): Float {
+    if (target.owner != Owner.PLAYER || attacker == Owner.PLAYER) return 1f
+    if (state.selectedSpecialAbility != SpecialAbilityType.DEFENSE_BOOST) return 1f
+    if (state.specialAbilityActiveSecondsRemaining <= 0f) return 1f
+    val reduction = SPECIAL_ABILITY_DEFENSE_BASE_REDUCTION +
+        state.selectedSpecialAbilityLevel * SPECIAL_ABILITY_DEFENSE_PER_LEVEL
+    return (1f - reduction).coerceAtLeast(SPECIAL_ABILITY_MIN_INCOMING_DAMAGE_MULTIPLIER)
+}
+
+private fun productionMultiplierForBase(base: BaseState, state: MatchState): Float {
+    if (state.selectedSpecialAbility != SpecialAbilityType.INSTANT_REFILL) return 1f
+    if (state.specialAbilityActiveSecondsRemaining <= 0f) return 1f
+    if (base.id != state.specialAbilityTargetBaseId || base.owner != Owner.PLAYER) return 1f
+    return SPECIAL_ABILITY_REFILL_SURGE_BASE_MULTIPLIER +
+        state.selectedSpecialAbilityLevel * SPECIAL_ABILITY_REFILL_SURGE_PER_LEVEL
 }

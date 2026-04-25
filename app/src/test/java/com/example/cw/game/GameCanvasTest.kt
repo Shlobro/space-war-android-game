@@ -99,10 +99,8 @@ class GameCanvasTest {
         val smallTextSize = levelBadgeTextSize(smallLayout, minTextSizePx, maxTextSizePx)
         val mediumTextSize = levelBadgeTextSize(mediumLayout, minTextSizePx, maxTextSizePx)
 
-        assertTrue(smallTextSize > minTextSizePx)
-        assertTrue(smallTextSize < maxTextSizePx)
-        assertTrue(mediumTextSize > smallTextSize)
-        assertTrue(mediumTextSize < maxTextSizePx)
+        assertEquals(10.62f, smallTextSize, 0.001f)
+        assertEquals(14.868f, mediumTextSize, 0.001f)
     }
 
     @Test

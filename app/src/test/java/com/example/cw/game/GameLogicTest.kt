@@ -41,6 +41,18 @@ class GameLogicTest {
     }
 
     @Test
+    fun createMatch_snapshotsEquippedSpecialAbilityIntoMissionState() {
+        val match = createMatch(
+            level = sampleLevel(),
+            selectedSpecialAbility = SpecialAbilityType.ATTACK_BOOST,
+            selectedSpecialAbilityLevel = 3
+        )
+
+        assertEquals(SpecialAbilityType.ATTACK_BOOST, match.selectedSpecialAbility)
+        assertEquals(3, match.selectedSpecialAbilityLevel)
+    }
+
+    @Test
     fun upgradeBase_spendsFundsAndRaisesCap() {
         val base = BaseState(
             id = 1,
@@ -361,6 +373,192 @@ class GameLogicTest {
 
         assertEquals(7.7f, updated.bases.first { it.id == 1 }.units, 0.001f)
         assertEquals(6.8f, updated.bases.first { it.id == 2 }.units, 0.001f)
+    }
+
+    @Test
+    fun activateSpecialAbility_instantRefillFillsSelectedBaseAndStartsCooldown() {
+        val refillBase = BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 4f, 3)
+        val state = matchState(
+            bases = listOf(refillBase),
+            selectedBaseIds = setOf(refillBase.id),
+            selectedSpecialAbility = SpecialAbilityType.INSTANT_REFILL,
+            selectedSpecialAbilityLevel = 2
+        )
+
+        val updated = activateSpecialAbility(state)
+
+        assertEquals(refillBase.cap.toFloat(), updated.bases.single().units, 0.001f)
+        assertEquals(SPECIAL_ABILITY_ACTIVE_DURATION_SECONDS, updated.specialAbilityActiveSecondsRemaining, 0.001f)
+        assertEquals(SPECIAL_ABILITY_COOLDOWN_SECONDS, updated.specialAbilityCooldownSecondsRemaining, 0.001f)
+        assertEquals(refillBase.id, updated.specialAbilityTargetBaseId)
+    }
+
+    @Test
+    fun activateSpecialAbility_refusesInstantRefillWithoutSelectedPlayerBase() {
+        val state = matchState(
+            bases = listOf(BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 4f, 3)),
+            selectedSpecialAbility = SpecialAbilityType.INSTANT_REFILL
+        )
+
+        val updated = activateSpecialAbility(state)
+
+        assertEquals("Select one of your bases to refill", updated.message)
+        assertTrue((updated.messageExpiresAtSeconds ?: 0f) > 0f)
+        assertEquals(0f, updated.specialAbilityCooldownSecondsRemaining, 0.001f)
+    }
+
+    @Test
+    fun stepMatch_speedBurstMovesPlayerFleetsFartherWhileActive() {
+        val fleet = FleetState(
+            id = 1,
+            owner = Owner.PLAYER,
+            sourceId = 1,
+            targetId = 2,
+            position = Offset(100f, 100f),
+            path = listOf(Offset(400f, 100f)),
+            pathIndex = 0,
+            units = 5f,
+            speed = 100f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val baseState = matchState(
+            bases = listOf(
+                BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 10f, 2),
+                BaseState(2, Offset(400f, 100f), Owner.AI_1, BaseType.COMMAND, 10f, 2)
+            ),
+            fleets = listOf(fleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 10f))
+        )
+
+        val normal = stepMatch(baseState, dt = 1f, cashIncomeMultiplier = 1f)
+        val boosted = stepMatch(
+            baseState.copy(
+                selectedSpecialAbility = SpecialAbilityType.SPEED_BOOST,
+                selectedSpecialAbilityLevel = 2,
+                specialAbilityActiveSecondsRemaining = SPECIAL_ABILITY_ACTIVE_DURATION_SECONDS
+            ),
+            dt = 1f,
+            cashIncomeMultiplier = 1f
+        )
+
+        assertTrue(boosted.fleets.single().position.x > normal.fleets.single().position.x)
+    }
+
+    @Test
+    fun stepMatch_defenseFieldReducesIncomingEnemyAttackPower() {
+        val playerBase = BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 10f, 2)
+        val enemyBase = BaseState(2, Offset(200f, 100f), Owner.AI_1, BaseType.COMMAND, 10f, 2)
+        val enemyFleet = FleetState(
+            id = 1,
+            owner = Owner.AI_1,
+            sourceId = 2,
+            targetId = 1,
+            position = playerBase.position,
+            path = listOf(playerBase.position),
+            pathIndex = 1,
+            units = 10f,
+            speed = 100f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val baseState = matchState(
+            bases = listOf(playerBase, enemyBase),
+            fleets = listOf(enemyFleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 10f))
+        )
+
+        val normal = stepMatch(baseState, dt = 0f, cashIncomeMultiplier = 1f)
+        val defended = stepMatch(
+            baseState.copy(
+                selectedSpecialAbility = SpecialAbilityType.DEFENSE_BOOST,
+                selectedSpecialAbilityLevel = 2,
+                specialAbilityActiveSecondsRemaining = SPECIAL_ABILITY_ACTIVE_DURATION_SECONDS
+            ),
+            dt = 0f,
+            cashIncomeMultiplier = 1f
+        )
+
+        assertTrue(defended.bases.first { it.id == 1 }.units > normal.bases.first { it.id == 1 }.units)
+    }
+
+    @Test
+    fun stepMatch_attackSurgeImprovesPlayerArrivalDamage() {
+        val targetBase = BaseState(1, Offset(100f, 100f), Owner.AI_1, BaseType.COMMAND, 12f, 2)
+        val playerBase = BaseState(2, Offset(200f, 100f), Owner.PLAYER, BaseType.COMMAND, 10f, 2)
+        val playerFleet = FleetState(
+            id = 1,
+            owner = Owner.PLAYER,
+            sourceId = 2,
+            targetId = 1,
+            position = targetBase.position,
+            path = listOf(targetBase.position),
+            pathIndex = 1,
+            units = 10f,
+            speed = 100f,
+            arrivalMultiplier = 1f,
+            fleetDamageMultiplier = 1f,
+            type = BaseType.COMMAND
+        )
+        val baseState = matchState(
+            bases = listOf(targetBase, playerBase),
+            fleets = listOf(playerFleet),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 10f))
+        )
+
+        val normal = stepMatch(baseState, dt = 0f, cashIncomeMultiplier = 1f)
+        val boosted = stepMatch(
+            baseState.copy(
+                selectedSpecialAbility = SpecialAbilityType.ATTACK_BOOST,
+                selectedSpecialAbilityLevel = 2,
+                specialAbilityActiveSecondsRemaining = SPECIAL_ABILITY_ACTIVE_DURATION_SECONDS
+            ),
+            dt = 0f,
+            cashIncomeMultiplier = 1f
+        )
+
+        assertTrue(boosted.bases.first { it.id == 1 }.units < normal.bases.first { it.id == 1 }.units)
+    }
+
+    @Test
+    fun stepMatch_instantRefillAddsTemporaryProductionSurgeToRefilledBase() {
+        val playerBase = BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 10f, 2)
+        val comparisonState = matchState(
+            bases = listOf(playerBase, BaseState(2, Offset(200f, 100f), Owner.AI_1, BaseType.COMMAND, 10f, 2)),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 10f))
+        )
+        val surgedState = comparisonState.copy(
+            selectedSpecialAbility = SpecialAbilityType.INSTANT_REFILL,
+            selectedSpecialAbilityLevel = 2,
+            specialAbilityActiveSecondsRemaining = SPECIAL_ABILITY_ACTIVE_DURATION_SECONDS,
+            specialAbilityTargetBaseId = playerBase.id
+        )
+
+        val normal = stepMatch(comparisonState, dt = 1f, cashIncomeMultiplier = 1f)
+        val surged = stepMatch(surgedState, dt = 1f, cashIncomeMultiplier = 1f)
+
+        assertTrue(surged.bases.first { it.id == playerBase.id }.units > normal.bases.first { it.id == playerBase.id }.units)
+    }
+
+    @Test
+    fun stepMatch_ticksSpecialAbilityTimersDown() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 10f, 2),
+                BaseState(2, Offset(200f, 100f), Owner.AI_1, BaseType.COMMAND, 10f, 2)
+            ),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 10f)),
+            selectedSpecialAbility = SpecialAbilityType.SPEED_BOOST,
+            specialAbilityActiveSecondsRemaining = 5f,
+            specialAbilityCooldownSecondsRemaining = 30f
+        )
+
+        val updated = stepMatch(state, dt = 2f, cashIncomeMultiplier = 1f)
+
+        assertEquals(3f, updated.specialAbilityActiveSecondsRemaining, 0.001f)
+        assertEquals(28f, updated.specialAbilityCooldownSecondsRemaining, 0.001f)
     }
 
     @Test
@@ -1090,7 +1288,12 @@ class GameLogicTest {
         message: String = "",
         messageExpiresAtSeconds: Float? = null,
         playerShipProductionMultiplier: Float = 1f,
-        playerFleetSpeedMultiplier: Float = 1f
+        playerFleetSpeedMultiplier: Float = 1f,
+        selectedSpecialAbility: SpecialAbilityType? = null,
+        selectedSpecialAbilityLevel: Int = 0,
+        specialAbilityActiveSecondsRemaining: Float = 0f,
+        specialAbilityCooldownSecondsRemaining: Float = 0f,
+        specialAbilityTargetBaseId: Int? = null
     ): MatchState {
         return MatchState(
             worldBounds = testWorldBounds,
@@ -1110,7 +1313,12 @@ class GameLogicTest {
             elapsedSeconds = 0f,
             isPaused = false,
             playerShipProductionMultiplier = playerShipProductionMultiplier,
-            playerFleetSpeedMultiplier = playerFleetSpeedMultiplier
+            playerFleetSpeedMultiplier = playerFleetSpeedMultiplier,
+            selectedSpecialAbility = selectedSpecialAbility,
+            selectedSpecialAbilityLevel = selectedSpecialAbilityLevel,
+            specialAbilityActiveSecondsRemaining = specialAbilityActiveSecondsRemaining,
+            specialAbilityCooldownSecondsRemaining = specialAbilityCooldownSecondsRemaining,
+            specialAbilityTargetBaseId = specialAbilityTargetBaseId
         )
     }
 

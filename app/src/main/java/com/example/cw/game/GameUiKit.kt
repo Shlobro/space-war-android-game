@@ -184,3 +184,12 @@ internal fun StatRow(label: String, value: String) {
         Text(value, color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
+
+internal fun specialAbilityAccent(ability: SpecialAbilityType): Color {
+    return when (ability) {
+        SpecialAbilityType.SPEED_BOOST -> Color(0xFF7CE3A1)
+        SpecialAbilityType.DEFENSE_BOOST -> Color(0xFF8BCBFF)
+        SpecialAbilityType.INSTANT_REFILL -> Color(0xFFFFD36E)
+        SpecialAbilityType.ATTACK_BOOST -> Color(0xFFFF8C7A)
+    }
+}

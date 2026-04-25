@@ -21,7 +21,9 @@ private const val ROUTE_WORLD_VERTICAL_MARGIN = 120f
 internal fun createMatch(
     level: LevelDefinition,
     playerShipProductionMultiplier: Float = 1f,
-    playerFleetSpeedMultiplier: Float = 1f
+    playerFleetSpeedMultiplier: Float = 1f,
+    selectedSpecialAbility: SpecialAbilityType? = null,
+    selectedSpecialAbilityLevel: Int = 0
 ): MatchState {
     return MatchState(
         worldBounds = level.worldBounds,
@@ -57,7 +59,9 @@ internal fun createMatch(
         elapsedSeconds = 0f,
         isPaused = false,
         playerShipProductionMultiplier = playerShipProductionMultiplier,
-        playerFleetSpeedMultiplier = playerFleetSpeedMultiplier
+        playerFleetSpeedMultiplier = playerFleetSpeedMultiplier,
+        selectedSpecialAbility = selectedSpecialAbility,
+        selectedSpecialAbilityLevel = selectedSpecialAbilityLevel
     )
 }
 

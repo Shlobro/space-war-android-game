@@ -71,7 +71,8 @@ private const val UPGRADE_ANIMATION_STROKE_WIDTH_DP = 4
 
 internal data class InGameHudSummary(
     val fundsLabel: String,
-    val elapsedTimeLabel: String
+    val elapsedTimeLabel: String,
+    val abilityStatusLabel: String? = null
 )
 
 internal data class UpgradeAnimationState(
@@ -82,7 +83,8 @@ internal data class UpgradeAnimationState(
 @Composable
 internal fun InGameHud(
     state: MatchState,
-    onOpenMenu: () -> Unit
+    onOpenMenu: () -> Unit,
+    onActivateAbility: () -> Unit
 ) {
     val hudSummary = inGameHudSummary(state)
 
@@ -115,6 +117,16 @@ internal fun InGameHud(
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
+        hudSummary.abilityStatusLabel?.let { status ->
+            AbilityHudActionChip(
+                ability = state.selectedSpecialAbility,
+                status = status,
+                isReady = state.specialAbilityCooldownSecondsRemaining <= 0f,
+                onTap = onActivateAbility,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
+
         if (state.message.isNotBlank()) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = HudOverlaySurface),
@@ -129,6 +141,44 @@ internal fun InGameHud(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AbilityHudActionChip(
+    ability: SpecialAbilityType?,
+    status: String,
+    isReady: Boolean,
+    onTap: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (ability == null) return
+
+    Card(
+        modifier = modifier
+            .clickable(enabled = isReady, role = Role.Button, onClick = onTap),
+        colors = CardDefaults.cardColors(containerColor = HudOverlaySurface),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = ability.title.uppercase(),
+                color = specialAbilityAccent(ability),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.6.sp
+            )
+            Text(
+                text = status,
+                color = if (isReady) TextPrimary else TextSecond,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -568,8 +618,24 @@ internal suspend fun runUpgradeAnimation(
 internal fun inGameHudSummary(state: MatchState): InGameHudSummary {
     return InGameHudSummary(
         fundsLabel = formatFunds(state.playerMoney),
-        elapsedTimeLabel = formatCompletionTime(state.elapsedSeconds)
+        elapsedTimeLabel = formatCompletionTime(state.elapsedSeconds),
+        abilityStatusLabel = specialAbilityStatusLabel(state)
     )
+}
+
+internal fun specialAbilityStatusLabel(state: MatchState): String? {
+    val ability = state.selectedSpecialAbility ?: return null
+    return when {
+        ability == SpecialAbilityType.INSTANT_REFILL && state.specialAbilityCooldownSecondsRemaining > 0f ->
+            "Refill in ${state.specialAbilityCooldownSecondsRemaining.toInt().coerceAtLeast(1)}s"
+        state.specialAbilityActiveSecondsRemaining > 0f ->
+            "Active ${state.specialAbilityActiveSecondsRemaining.toInt().coerceAtLeast(1)}s"
+        state.specialAbilityCooldownSecondsRemaining > 0f ->
+            "Ready in ${state.specialAbilityCooldownSecondsRemaining.toInt().coerceAtLeast(1)}s"
+        ability == SpecialAbilityType.INSTANT_REFILL ->
+            "Tap to refill selected base"
+        else -> "Tap to activate"
+    }
 }
 
 internal fun formatCompletionTime(elapsedSeconds: Float): String {
