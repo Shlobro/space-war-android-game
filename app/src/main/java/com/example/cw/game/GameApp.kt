@@ -1,6 +1,7 @@
 package com.example.cw.game
 
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -74,7 +75,13 @@ fun GameApp() {
                     campaign = progress.campaign
                 }
             }
-        }
+            }
+    }
+
+    val backNavigation = resolveBackNavigation(appScreen, matchState)
+    BackHandler(enabled = backNavigation.handled) {
+        appScreen = backNavigation.screen
+        matchState = backNavigation.matchState
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF06111C)) {
@@ -233,6 +240,52 @@ fun GameApp() {
 }
 
 internal fun togglePause(state: MatchState): MatchState = state.copy(isPaused = !state.isPaused)
+
+internal data class BackNavigationResult(
+    val screen: AppScreen,
+    val matchState: MatchState?,
+    val handled: Boolean
+)
+
+internal fun resolveBackNavigation(
+    screen: AppScreen,
+    matchState: MatchState?
+): BackNavigationResult {
+    return when (screen) {
+        AppScreen.HOME -> BackNavigationResult(
+            screen = screen,
+            matchState = matchState,
+            handled = false
+        )
+
+        AppScreen.LEVELS,
+        AppScreen.UPGRADES -> BackNavigationResult(
+            screen = AppScreen.HOME,
+            matchState = matchState,
+            handled = true
+        )
+
+        AppScreen.IN_GAME -> when {
+            matchState == null -> BackNavigationResult(
+                screen = AppScreen.LEVELS,
+                matchState = null,
+                handled = true
+            )
+
+            matchState.status != MatchStatus.RUNNING || matchState.isPaused -> BackNavigationResult(
+                screen = AppScreen.LEVELS,
+                matchState = null,
+                handled = true
+            )
+
+            else -> BackNavigationResult(
+                screen = AppScreen.IN_GAME,
+                matchState = togglePause(matchState),
+                handled = true
+            )
+        }
+    }
+}
 
 private fun restartLevel(
     levelRepository: LevelRepository,

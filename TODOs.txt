@@ -1,4 +1,2 @@
-the back button inside a level should bring up the menu. if clicked again it should exit the level and so on. currently it seems to compeltely exit the game.
-
 I want to introduce another screen which is special abilities. currently there should be. one of them is the speed of the troops which gives a short boost to the troops when activated. the other is defense which increses defense a little on players node while active. the third should be instantly refill a node to max that it's level allows and the fourth should be more attack so your troops do a bit more damage. they should be active for 5 seconds at the moment and take 30 seconds to refill. in the upgrade screen you can upgrade these special abilities. the player can only have one of these abilities at a time and will need to choose
 

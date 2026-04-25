@@ -38,6 +38,7 @@ internal val AccentCyan = Color(0xFF59D0FF)
 internal val AccentGold = Color(0xFFF6CB7D)
 internal val AccentGreen = Color(0xFF9BE7AE)
 internal val AccentRed = Color(0xFFFF7868)
+// This is a dark shadow outline for the gold upgrade arrow, not a light surface border token.
 internal val NodeUpgradeIndicatorOutline = Color(0xFF102132)
 internal val TextPrimary = Color(0xFFEAF4FF)
 internal val TextSecond = Color(0xFF7A9EBB)

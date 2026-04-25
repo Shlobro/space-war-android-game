@@ -58,6 +58,8 @@ internal fun decodeCampaignState(
         return CampaignState()
     }
 
+    // Every persisted CampaignState field must be schema-gated here when it is introduced.
+    // Reading newer keys from older save versions should default to a safe zero-value instead.
     val migratedBonusStars = if (schemaVersion == 0 || schemaVersion == 1) 0 else bonusStarCredits.coerceAtLeast(0)
     val migratedSpentStars = if (schemaVersion == 0 || schemaVersion == 1) 0 else spentStars.coerceAtLeast(0)
     val migratedCashRateLevel = if (schemaVersion < 2) 0 else cashRateLevel.coerceAtLeast(0)
