@@ -302,7 +302,9 @@ private fun LevelCard(
 internal fun UpgradesScreen(
     campaign: CampaignState,
     onBack: () -> Unit,
-    onUpgradeCashRate: () -> Unit
+    onUpgradeCashRate: () -> Unit,
+    onUpgradeRefillRate: () -> Unit,
+    onUpgradeFleetSpeed: () -> Unit
 ) {
     MenuBackground {
         Column(
@@ -357,14 +359,37 @@ internal fun UpgradesScreen(
                     description = "Increases the rate at which funds accumulate during a mission. Each level adds +25% income speed.",
                     currentLevel = campaign.cashRateLevel,
                     cost = 1,
-                    canAfford = campaign.availableStars > 0,
+                    canAfford = campaign.canPurchaseCampaignUpgrade(campaign.cashRateLevel),
+                    isMaxLevel = campaign.cashRateLevel >= CAMPAIGN_MAX_UPGRADE_LEVEL,
                     accentColor = AccentGold,
                     onUpgrade = onUpgradeCashRate
                 )
 
-                UpgradePlaceholderCard("FLEET SPEED", "Movement Upgrade", "Increases ship travel velocity between nodes.")
-                UpgradePlaceholderCard("ASSAULT PROTOCOL", "Combat Upgrade", "Boosts attack strength of Assault-type bases.")
-                UpgradePlaceholderCard("RELAY NETWORK", "Logistics Upgrade", "Extends the range bonus of Relay-type bases.")
+                UpgradeCard(
+                    title = "REFILL RATE",
+                    subtitle = "Production Upgrade",
+                    description = "Increases how fast your owned nodes generate ships during a mission. Each level adds +25% player node production.",
+                    currentLevel = campaign.refillRateLevel,
+                    cost = 1,
+                    canAfford = campaign.canPurchaseCampaignUpgrade(campaign.refillRateLevel),
+                    isMaxLevel = campaign.refillRateLevel >= CAMPAIGN_MAX_UPGRADE_LEVEL,
+                    accentColor = AccentCyan,
+                    onUpgrade = onUpgradeRefillRate
+                )
+
+                UpgradeCard(
+                    title = "FLEET SPEED",
+                    subtitle = "Movement Upgrade",
+                    description = "Increases the travel speed of fleets launched from your nodes. Each level adds +20% player fleet velocity.",
+                    currentLevel = campaign.fleetSpeedLevel,
+                    cost = 1,
+                    canAfford = campaign.canPurchaseCampaignUpgrade(campaign.fleetSpeedLevel),
+                    isMaxLevel = campaign.fleetSpeedLevel >= CAMPAIGN_MAX_UPGRADE_LEVEL,
+                    accentColor = Color(0xFF7CE3A1),
+                    onUpgrade = onUpgradeFleetSpeed
+                )
+
+                UpgradePlaceholderCard("SPECIAL ABILITIES", "Loadout Upgrade", "Reserved for active abilities such as speed burst, defense, instant refill, and attack boosts.")
 
                 Spacer(Modifier.height(8.dp))
 
@@ -388,6 +413,7 @@ private fun UpgradeCard(
     currentLevel: Int,
     cost: Int,
     canAfford: Boolean,
+    isMaxLevel: Boolean,
     accentColor: Color,
     onUpgrade: () -> Unit
 ) {
@@ -429,7 +455,8 @@ private fun UpgradeCard(
                         .border(1.dp, BorderDim, RoundedCornerShape(6.dp))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Text("LVL $currentLevel", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    val levelLabel = if (isMaxLevel) "MAX" else "LVL $currentLevel"
+                    Text(levelLabel, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -448,16 +475,16 @@ private fun UpgradeCard(
                 ) {
                     Text("COST", color = TextDim, fontSize = 11.sp, letterSpacing = 1.sp)
                     Text(
-                        "$cost ★",
-                        color = if (canAfford) AccentGold else TextDim,
+                        if (isMaxLevel) "--" else "$cost ★",
+                        color = if (canAfford && !isMaxLevel) AccentGold else TextDim,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 PrimaryButton(
-                    label = "UPGRADE",
+                    label = if (isMaxLevel) "MAXED" else "UPGRADE",
                     onClick = onUpgrade,
-                    enabled = canAfford
+                    enabled = canAfford && !isMaxLevel
                 )
             }
         }

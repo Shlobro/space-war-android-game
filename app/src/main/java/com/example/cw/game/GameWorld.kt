@@ -18,7 +18,11 @@ private const val ROUTE_RING_POINT_COUNT = 16
 private const val ROUTE_WORLD_SIDE_MARGIN = 80f
 private const val ROUTE_WORLD_VERTICAL_MARGIN = 120f
 
-internal fun createMatch(level: LevelDefinition): MatchState {
+internal fun createMatch(
+    level: LevelDefinition,
+    playerShipProductionMultiplier: Float = 1f,
+    playerFleetSpeedMultiplier: Float = 1f
+): MatchState {
     return MatchState(
         worldBounds = level.worldBounds,
         bases = level.bases.map {
@@ -51,7 +55,9 @@ internal fun createMatch(level: LevelDefinition): MatchState {
         levelName = level.name,
         starThresholds = level.starThresholds,
         elapsedSeconds = 0f,
-        isPaused = false
+        isPaused = false,
+        playerShipProductionMultiplier = playerShipProductionMultiplier,
+        playerFleetSpeedMultiplier = playerFleetSpeedMultiplier
     )
 }
 

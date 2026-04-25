@@ -102,7 +102,7 @@ internal fun sendFleet(
         path = route,
         pathIndex = 0,
         units = departingUnits.toFloat(),
-        speed = if (source.type == BaseType.FAST) 260f else 120f,
+        speed = fleetSpeedForLaunch(source, sender, state.playerFleetSpeedMultiplier),
         arrivalMultiplier = 1f,
         fleetDamageMultiplier = 1f,
         type = source.type
@@ -211,7 +211,7 @@ private fun upgradeBaseForOwner(
 internal fun stepMatch(state: MatchState, dt: Float, cashIncomeMultiplier: Float): MatchState {
     if (state.status != MatchStatus.RUNNING || state.isPaused) return state
 
-    var bases = produceShips(state.bases, dt)
+    var bases = produceShips(state.bases, dt, state.playerShipProductionMultiplier)
     val elapsedSeconds = state.elapsedSeconds + dt
     val playerMoney = state.playerMoney + incomePerSecond(Owner.PLAYER, bases, cashIncomeMultiplier) * dt
     val aiStatesWithIncome = state.aiStates.mapValues { (owner, aiState) ->
@@ -353,10 +353,15 @@ private fun preferredPressureTarget(source: BaseState, nearbyTargets: List<BaseS
         .minWithOrNull(compareBy<BaseState>({ it.units }, { distance(source.position, it.position) }))
 }
 
-private fun produceShips(bases: List<BaseState>, dt: Float): List<BaseState> {
+private fun produceShips(
+    bases: List<BaseState>,
+    dt: Float,
+    playerShipProductionMultiplier: Float
+): List<BaseState> {
     return bases.map { base ->
         val rateMultiplier = if (base.owner == Owner.NEUTRAL) 0.5f else 1f
-        val rate = base.productionRate * rateMultiplier * dt
+        val upgradeMultiplier = if (base.owner == Owner.PLAYER) playerShipProductionMultiplier else 1f
+        val rate = base.productionRate * rateMultiplier * upgradeMultiplier * dt
         val units = if (base.units > base.cap.toFloat()) {
             max(base.cap.toFloat(), base.units - rate)
         } else {
@@ -364,6 +369,11 @@ private fun produceShips(bases: List<BaseState>, dt: Float): List<BaseState> {
         }
         base.copy(units = units)
     }
+}
+
+private fun fleetSpeedForLaunch(source: BaseState, sender: Owner, playerFleetSpeedMultiplier: Float): Float {
+    val baseSpeed = if (source.type == BaseType.FAST) 260f else 120f
+    return if (sender == Owner.PLAYER) baseSpeed * playerFleetSpeedMultiplier else baseSpeed
 }
 
 private fun moveFleets(fleets: List<FleetState>, dt: Float): List<FleetState> {

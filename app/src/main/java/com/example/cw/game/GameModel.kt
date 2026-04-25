@@ -8,6 +8,8 @@ import com.example.cw.game.levels.RADIUS_PER_LEVEL
 import com.example.cw.game.levels.StarThresholds
 import com.example.cw.game.levels.WorldBounds
 
+internal const val CAMPAIGN_MAX_UPGRADE_LEVEL = 5
+
 internal data class MatchState(
     val worldBounds: WorldBounds,
     val bases: List<BaseState>,
@@ -25,6 +27,8 @@ internal data class MatchState(
     val starThresholds: StarThresholds,
     val elapsedSeconds: Float,
     val isPaused: Boolean,
+    val playerShipProductionMultiplier: Float = 1f,
+    val playerFleetSpeedMultiplier: Float = 1f,
     val earnedStars: Int = 0,
     val earnedStarReward: Int = 0,
     val improvedBestStars: Boolean = false
@@ -35,12 +39,19 @@ internal data class CampaignState(
     val starsByLevel: Map<Int, Int> = emptyMap(),
     val bonusStarCredits: Int = 0,
     val spentStars: Int = 0,
-    val cashRateLevel: Int = 0
+    val cashRateLevel: Int = 0,
+    val refillRateLevel: Int = 0,
+    val fleetSpeedLevel: Int = 0
 ) {
     val totalStars: Int get() = starsByLevel.values.sum()
     val availableStars: Int get() = (totalStars + bonusStarCredits - spentStars).coerceAtLeast(0)
 
     fun cashIncomeMultiplier(): Float = 1f + cashRateLevel * 0.25f
+    fun playerShipProductionMultiplier(): Float = 1f + refillRateLevel * 0.25f
+    fun playerFleetSpeedMultiplier(): Float = 1f + fleetSpeedLevel * 0.2f
+    fun canPurchaseCampaignUpgrade(currentLevel: Int): Boolean {
+        return availableStars > 0 && currentLevel < CAMPAIGN_MAX_UPGRADE_LEVEL
+    }
 
     fun starsForLevel(levelId: Int): Int = starsByLevel[levelId] ?: 0
 

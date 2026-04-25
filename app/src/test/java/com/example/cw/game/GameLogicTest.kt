@@ -32,6 +32,15 @@ class GameLogicTest {
     }
 
     @Test
+    fun sendFleet_appliesCampaignFleetSpeedMultiplierToPlayerLaunches() {
+        val state = createMatch(sampleLevel(), playerFleetSpeedMultiplier = 1.4f)
+
+        val updated = sendFleet(state, sourceId = 1, targetId = 3, sender = Owner.PLAYER)
+
+        assertEquals(168f, updated.fleets.single().speed, 0.001f)
+    }
+
+    @Test
     fun upgradeBase_spendsFundsAndRaisesCap() {
         val base = BaseState(
             id = 1,
@@ -335,6 +344,23 @@ class GameLogicTest {
         // Player: (0.6 + 2 * 0.25) * 10s = 11.0, AI: 0f + (0.6 + 1 * 0.25) * 10s = 8.5.
         assertEquals(11f, updated.playerMoney, 0.001f)
         assertEquals(8.5f, updated.aiStates.getValue(Owner.AI_1).money, 0.001f)
+    }
+
+    @Test
+    fun stepMatch_appliesCampaignRefillUpgradeOnlyToPlayerBases() {
+        val state = matchState(
+            bases = listOf(
+                BaseState(1, Offset(100f, 100f), Owner.PLAYER, BaseType.COMMAND, 5f, 2),
+                BaseState(2, Offset(200f, 100f), Owner.AI_1, BaseType.COMMAND, 5f, 2)
+            ),
+            aiStates = mapOf(Owner.AI_1 to AiRuntimeState(AiType.STANDARD, 0f, 10f)),
+            playerShipProductionMultiplier = 1.5f
+        )
+
+        val updated = stepMatch(state, dt = 2f, cashIncomeMultiplier = 1f)
+
+        assertEquals(7.7f, updated.bases.first { it.id == 1 }.units, 0.001f)
+        assertEquals(6.8f, updated.bases.first { it.id == 2 }.units, 0.001f)
     }
 
     @Test
@@ -963,6 +989,17 @@ class GameLogicTest {
         assertEquals(2, spent.spentStars)
     }
 
+    @Test
+    fun campaignUpgradeAvailability_requiresStarsAndStopsAtMaxLevel() {
+        val buyableCampaign = CampaignState(bonusStarCredits = 3)
+        val maxedCampaign = buyableCampaign.copy(refillRateLevel = CAMPAIGN_MAX_UPGRADE_LEVEL)
+        val brokeCampaign = CampaignState()
+
+        assertTrue(buyableCampaign.canPurchaseCampaignUpgrade(currentLevel = 0))
+        assertFalse(maxedCampaign.canPurchaseCampaignUpgrade(maxedCampaign.refillRateLevel))
+        assertFalse(brokeCampaign.canPurchaseCampaignUpgrade(currentLevel = 0))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun campaignCompleteLevel_rejectsInvalidStarCounts() {
         CampaignState().completeLevel(levelId = 2, starsEarned = 0)
@@ -1051,7 +1088,9 @@ class GameLogicTest {
         nextFleetId: Int = 1,
         selectedBaseIds: Set<Int> = emptySet(),
         message: String = "",
-        messageExpiresAtSeconds: Float? = null
+        messageExpiresAtSeconds: Float? = null,
+        playerShipProductionMultiplier: Float = 1f,
+        playerFleetSpeedMultiplier: Float = 1f
     ): MatchState {
         return MatchState(
             worldBounds = testWorldBounds,
@@ -1069,7 +1108,9 @@ class GameLogicTest {
             levelName = "Test",
             starThresholds = StarThresholds(),
             elapsedSeconds = 0f,
-            isPaused = false
+            isPaused = false,
+            playerShipProductionMultiplier = playerShipProductionMultiplier,
+            playerFleetSpeedMultiplier = playerFleetSpeedMultiplier
         )
     }
 

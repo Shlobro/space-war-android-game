@@ -30,7 +30,9 @@ class CampaignPersistenceTest {
             upgradePoints = 4,
             bonusStarCredits = 0,
             spentStars = 0,
-            cashRateLevel = 2
+            cashRateLevel = 2,
+            refillRateLevel = 1,
+            fleetSpeedLevel = 3
         )
 
         assertEquals(CampaignState(), decoded)
@@ -45,7 +47,9 @@ class CampaignPersistenceTest {
             upgradePoints = 4,
             bonusStarCredits = 0,
             spentStars = 0,
-            cashRateLevel = 2
+            cashRateLevel = 2,
+            refillRateLevel = 1,
+            fleetSpeedLevel = 3
         )
 
         assertEquals(setOf(1, 2), decoded.completedLevels)
@@ -54,10 +58,33 @@ class CampaignPersistenceTest {
         assertEquals(5, decoded.availableStars)
         assertEquals(0, decoded.spentStars)
         assertEquals(2, decoded.cashRateLevel)
+        assertEquals(0, decoded.refillRateLevel)
+        assertEquals(0, decoded.fleetSpeedLevel)
     }
 
     @Test
     fun decodeCampaignState_supportsCurrentSpendableStarSchema() {
+        val decoded = decodeCampaignState(
+            schemaVersion = 3,
+            completedLevels = "1,2",
+            starsByLevel = "1:3;2:2",
+            upgradePoints = 0,
+            bonusStarCredits = 1,
+            spentStars = 3,
+            cashRateLevel = 2,
+            refillRateLevel = 4,
+            fleetSpeedLevel = 1
+        )
+
+        assertEquals(1, decoded.bonusStarCredits)
+        assertEquals(3, decoded.spentStars)
+        assertEquals(3, decoded.availableStars)
+        assertEquals(4, decoded.refillRateLevel)
+        assertEquals(1, decoded.fleetSpeedLevel)
+    }
+
+    @Test
+    fun decodeCampaignState_ignoresNewUpgradeLevelsForPreSchemaThreeSaves() {
         val decoded = decodeCampaignState(
             schemaVersion = 2,
             completedLevels = "1,2",
@@ -65,12 +92,13 @@ class CampaignPersistenceTest {
             upgradePoints = 0,
             bonusStarCredits = 1,
             spentStars = 3,
-            cashRateLevel = 2
+            cashRateLevel = 2,
+            refillRateLevel = 4,
+            fleetSpeedLevel = 1
         )
 
-        assertEquals(1, decoded.bonusStarCredits)
-        assertEquals(3, decoded.spentStars)
-        assertEquals(3, decoded.availableStars)
+        assertEquals(0, decoded.refillRateLevel)
+        assertEquals(0, decoded.fleetSpeedLevel)
     }
 
     @Test

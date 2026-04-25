@@ -54,7 +54,7 @@ fun GameApp() {
             }
     }
 
-    LaunchedEffect(appScreen, matchState?.status, matchState?.isPaused, campaign.cashRateLevel) {
+    LaunchedEffect(appScreen, matchState?.status, matchState?.isPaused) {
         var previousTime = 0L
         while (appScreen == AppScreen.IN_GAME && matchState?.status == MatchStatus.RUNNING) {
             withFrameNanos { frameTime ->
@@ -68,6 +68,7 @@ fun GameApp() {
                 } else {
                     val dt = ((frameTime - previousTime) / 1_000_000_000f).coerceIn(0.0f, 0.033f)
                     previousTime = frameTime
+                    // Cash income reads the latest campaign state each frame; refill and speed are snapshotted into MatchState.
                     val stepped = stepMatch(currentMatch, dt, campaign.cashIncomeMultiplier())
                     val progress = applyPostStepCampaignProgress(campaign, currentMatch, stepped)
                     matchState = progress.match
@@ -100,7 +101,13 @@ fun GameApp() {
                     loadError = levelLoadError,
                     onBack = { appScreen = AppScreen.HOME },
                     onPlayLevel = { levelId ->
-                        runCatching { createMatch(levelRepository.loadLevel(levelId)) }
+                        runCatching {
+                            createMatch(
+                                level = levelRepository.loadLevel(levelId),
+                                playerShipProductionMultiplier = campaign.playerShipProductionMultiplier(),
+                                playerFleetSpeedMultiplier = campaign.playerFleetSpeedMultiplier()
+                            )
+                        }
                             .onSuccess { level ->
                                 levelLoadError = null
                                 matchState = level
@@ -116,10 +123,18 @@ fun GameApp() {
                     campaign = campaign,
                     onBack = { appScreen = AppScreen.HOME },
                     onUpgradeCashRate = {
-                        if (campaign.availableStars > 0) {
-                            campaign = campaign
-                                .spendStars(cost = 1)
-                                .copy(cashRateLevel = campaign.cashRateLevel + 1)
+                        campaign = upgradeCampaignStat(campaign, campaign.cashRateLevel) {
+                            copy(cashRateLevel = cashRateLevel + 1)
+                        }
+                    },
+                    onUpgradeRefillRate = {
+                        campaign = upgradeCampaignStat(campaign, campaign.refillRateLevel) {
+                            copy(refillRateLevel = refillRateLevel + 1)
+                        }
+                    },
+                    onUpgradeFleetSpeed = {
+                        campaign = upgradeCampaignStat(campaign, campaign.fleetSpeedLevel) {
+                            copy(fleetSpeedLevel = fleetSpeedLevel + 1)
                         }
                     }
                 )
@@ -183,7 +198,7 @@ fun GameApp() {
                             PauseOverlay(
                                 onResume = { matchState = activeMatch.copy(isPaused = false) },
                                 onRestart = {
-                                    restartLevel(levelRepository, activeMatch.levelId)
+                                    restartLevel(levelRepository, activeMatch.levelId, campaign)
                                         .onSuccess { restartedMatch ->
                                             levelLoadError = null
                                             matchState = restartedMatch
@@ -219,8 +234,30 @@ fun GameApp() {
 
 internal fun togglePause(state: MatchState): MatchState = state.copy(isPaused = !state.isPaused)
 
-private fun restartLevel(levelRepository: LevelRepository, levelId: Int): Result<MatchState> {
-    return runCatching { createMatch(levelRepository.loadLevel(levelId)) }
+private fun restartLevel(
+    levelRepository: LevelRepository,
+    levelId: Int,
+    campaign: CampaignState
+): Result<MatchState> {
+    return runCatching {
+        createMatch(
+            level = levelRepository.loadLevel(levelId),
+            playerShipProductionMultiplier = campaign.playerShipProductionMultiplier(),
+            playerFleetSpeedMultiplier = campaign.playerFleetSpeedMultiplier()
+        )
+    }
+}
+
+private inline fun upgradeCampaignStat(
+    campaign: CampaignState,
+    currentLevel: Int,
+    upgrade: CampaignState.() -> CampaignState
+): CampaignState {
+    return if (campaign.canPurchaseCampaignUpgrade(currentLevel)) {
+        campaign.spendStars(cost = 1).upgrade()
+    } else {
+        campaign
+    }
 }
 
 internal data class CampaignProgressUpdate(

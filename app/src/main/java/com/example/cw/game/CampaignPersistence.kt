@@ -9,7 +9,9 @@ private const val CAMPAIGN_UPGRADE_POINTS_KEY = "upgrade_points"
 private const val CAMPAIGN_BONUS_STAR_CREDITS_KEY = "bonus_star_credits"
 private const val CAMPAIGN_SPENT_STARS_KEY = "spent_stars"
 private const val CAMPAIGN_CASH_RATE_LEVEL_KEY = "cash_rate_level"
-private const val CAMPAIGN_SCHEMA_VERSION = 2
+private const val CAMPAIGN_REFILL_RATE_LEVEL_KEY = "refill_rate_level"
+private const val CAMPAIGN_FLEET_SPEED_LEVEL_KEY = "fleet_speed_level"
+private const val CAMPAIGN_SCHEMA_VERSION = 3
 
 internal const val CAMPAIGN_PREFERENCES_NAME = "campaign_state"
 
@@ -21,7 +23,9 @@ internal fun loadCampaignState(preferences: SharedPreferences): CampaignState {
         upgradePoints = preferences.getInt(CAMPAIGN_UPGRADE_POINTS_KEY, 0),
         bonusStarCredits = preferences.getInt(CAMPAIGN_BONUS_STAR_CREDITS_KEY, 0),
         spentStars = preferences.getInt(CAMPAIGN_SPENT_STARS_KEY, 0),
-        cashRateLevel = preferences.getInt(CAMPAIGN_CASH_RATE_LEVEL_KEY, 0)
+        cashRateLevel = preferences.getInt(CAMPAIGN_CASH_RATE_LEVEL_KEY, 0),
+        refillRateLevel = preferences.getInt(CAMPAIGN_REFILL_RATE_LEVEL_KEY, 0),
+        fleetSpeedLevel = preferences.getInt(CAMPAIGN_FLEET_SPEED_LEVEL_KEY, 0)
     )
 }
 
@@ -34,6 +38,8 @@ internal fun saveCampaignState(preferences: SharedPreferences, campaign: Campaig
         .putInt(CAMPAIGN_SPENT_STARS_KEY, campaign.spentStars)
         .remove(CAMPAIGN_UPGRADE_POINTS_KEY)
         .putInt(CAMPAIGN_CASH_RATE_LEVEL_KEY, campaign.cashRateLevel)
+        .putInt(CAMPAIGN_REFILL_RATE_LEVEL_KEY, campaign.refillRateLevel)
+        .putInt(CAMPAIGN_FLEET_SPEED_LEVEL_KEY, campaign.fleetSpeedLevel)
         .apply()
 }
 
@@ -44,7 +50,9 @@ internal fun decodeCampaignState(
     upgradePoints: Int,
     bonusStarCredits: Int,
     spentStars: Int,
-    cashRateLevel: Int
+    cashRateLevel: Int,
+    refillRateLevel: Int,
+    fleetSpeedLevel: Int
 ): CampaignState {
     if (!isSupportedCampaignSchemaVersion(schemaVersion)) {
         return CampaignState()
@@ -53,12 +61,17 @@ internal fun decodeCampaignState(
     val migratedBonusStars = if (schemaVersion == 0 || schemaVersion == 1) 0 else bonusStarCredits.coerceAtLeast(0)
     val migratedSpentStars = if (schemaVersion == 0 || schemaVersion == 1) 0 else spentStars.coerceAtLeast(0)
 
+    val migratedRefillRateLevel = if (schemaVersion < 3) 0 else refillRateLevel.coerceAtLeast(0)
+    val migratedFleetSpeedLevel = if (schemaVersion < 3) 0 else fleetSpeedLevel.coerceAtLeast(0)
+
     return CampaignState(
         completedLevels = decodeIntSet(completedLevels),
         starsByLevel = decodeStarsByLevel(starsByLevel),
         bonusStarCredits = migratedBonusStars,
         spentStars = migratedSpentStars,
-        cashRateLevel = cashRateLevel.coerceAtLeast(0)
+        cashRateLevel = cashRateLevel.coerceAtLeast(0),
+        refillRateLevel = migratedRefillRateLevel,
+        fleetSpeedLevel = migratedFleetSpeedLevel
     )
 }
 
